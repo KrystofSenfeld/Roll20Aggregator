@@ -1,0 +1,18 @@
+﻿@inject NavigationManager NavigationManager
+@inject ChatLogState ChatLogState
+
+<h3>FileUpload</h3>
+
+<InputFile OnChange="UploadFile"/>
+
+@code {
+    public bool IsLoading { get; private set; }
+
+    private async Task UploadFile(InputFileChangeEventArgs e) {
+        IsLoading = true;
+        await ChatLogState.GetLogFromFile(e.File);
+
+        IsLoading = false;
+        NavigationManager.NavigateTo("/results");
+    }
+}

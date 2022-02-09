@@ -1,0 +1,142 @@
+﻿@page "/results"
+@inject ChatLogState ChatLogState
+
+<div class="container">
+    <div class="row">
+        <div class="col-3">
+            <form>
+                <h3>Select Die</h3>
+                <div>
+                    <select @onchange="DieSelected">
+                        <option value=""></option>
+                        <option value="d20">d20</option>
+                        <option value="d100">d100</option>
+                    </select>
+                </div>
+
+                <h3>Select Characters</h3>
+                <div>
+                    <select @onchange="CharacterSelected">
+                        <option value=""></option>
+                        @foreach (var character in ChatLogState.ChatLog.AllCharacters) {
+                            <option value="@character">@character</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="toppings">
+                    @foreach (var character in ChatLogState.CurrentCharacters) {
+                        <div class="topping">
+                            @character
+                            <button type="button" class="delete-topping" @onclick="@(() => RemoveCharacter(character))">x</button>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <div class="col">
+            <h3>Results</h3>
+            <p>@ChatLogState.ChatLog.HtmlDoc.ParsedText</p>
+
+            <table>
+                <tr>
+                    <th scope="col">Character</th>
+                    <th scope="col">Total Rolls</th>
+                    <th scope="col">Average Roll</th>
+                    <th scope="col" colspan="@RollStatsCharacter.RollKeys.Length" class="tableSwitchHeader">Rolls by Count</th>
+                </tr>
+
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    @foreach (var key in RollStatsCharacter.RollKeys) {
+                        <th>@key</th>
+                    }
+                </tr>
+
+                <tr>
+                    <td>Global Total</td>
+                    <td>0</td>
+                    <td>0</td>
+
+                    @foreach (var key in RollStatsCharacter.RollKeys) {
+                        <td>0</td>
+                    }
+                </tr>
+
+                <tr>
+                    <td>Group Total</td>
+                    <td>@ChatLogState.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
+                    <td>@GroupAverage()</td>
+
+                    @foreach (var key in RollStatsCharacter.RollKeys) {
+                        <td>@ChatLogState.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum()</td>
+                    }
+                </tr>
+
+                @foreach (var kvp in ChatLogState.CurrentStats) {
+                    <tr>
+                        <td>@kvp.Key</td>
+                        <td>@kvp.Value.TotalRollsCount</td>
+                        <td>@kvp.Value.AverageRoll</td>
+
+                        @foreach (var kvp2 in kvp.Value.RollsCount) {
+                            <td>@kvp2.Value</td>
+                        }
+
+                    </tr>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    RollStatsCharacter globalStats = new RollStatsCharacter(ChatLogState.CurrentDieType, ChatLogState.ChatLog.AllRolls)
+
+    public decimal GroupAverage() {
+        decimal runningTotalSum = 0;
+        int runningTotalCount = 0;
+        foreach(var kvp in ChatLogState.CurrentStats) {
+            runningTotalSum += kvp.Value.AverageRoll * kvp.Value.TotalRollsCount;
+            runningTotalCount += kvp.Value.TotalRollsCount;
+        }
+        return runningTotalCount == 0 ? 0m : runningTotalSum / runningTotalCount;
+    }
+
+    async void DieSelected(ChangeEventArgs e) {
+        string newDie = e.Value.ToString();
+
+        if (string.IsNullOrEmpty(newDie)) {
+            return;
+        }
+
+        ChatLogState.CurrentDieType = newDie;
+        RollStatsCharacter.SetRollKeys(newDie);
+        await ChatLogState.SetStatsDict();
+    }
+
+    async void CharacterSelected(ChangeEventArgs e) {
+        string newCharacter = e.Value.ToString();
+
+        if (string.IsNullOrEmpty(newCharacter)) {
+            return;
+        }
+
+        if (!ChatLogState.CurrentCharacters.Contains(newCharacter)) {
+            await AddCharacter(newCharacter);
+        }
+    }
+
+    async Task AddCharacter(string character) {
+        ChatLogState.CurrentCharacters.Add(character);
+        await ChatLogState.AddToStatsDict(character);
+    }
+
+    async Task RemoveCharacter(string character) {
+        ChatLogState.CurrentCharacters.Remove(character);
+        await ChatLogState.RemoveFromStatsDict(character);
+    }
+}
