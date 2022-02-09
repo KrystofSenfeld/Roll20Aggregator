@@ -4,19 +4,22 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-a, .btn-link {
-    color: #0366d6;
+.form-field {
+    display: flex;
+    margin: 0.5rem;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
+    .form-field > label {
+        width: 8rem;
+    }
 
-.content {
-    padding-top: 1.1rem;
-}
+    .form-field > div {
+        flex-grow: 1;
+    }
+
+    .form-field input {
+        width: 100%;
+    }
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
