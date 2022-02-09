@@ -13,7 +13,8 @@ namespace PracticeBlazorApp {
         public ChatLog ChatLog { get; set; } = new("");
         public List<string> CurrentCharacters { get; set; } = new();
         public string CurrentDieType { get; set; } = "";
-        public Dictionary<string, RollStatsCharacter> CurrentStats { get; set; } = new();
+        public Dictionary<string, RollStats> CurrentStats { get; set; } = new();
+        public RollStats CurrentGlobalStats { get; set; } = new();
 
         public async Task GetLogFromFile(IBrowserFile file) {
             string text;
@@ -26,11 +27,12 @@ namespace PracticeBlazorApp {
 
         public async Task SetStatsDict() {
             CurrentStats = CurrentCharacters.ToDictionary(
-                keySelector: c => c, elementSelector: c => new RollStatsCharacter(CurrentDieType, c, ChatLog.AllRolls));
+                keySelector: c => c, elementSelector: c => new RollStats(CurrentDieType, c, ChatLog.AllRolls));
+            CurrentGlobalStats = new RollStats(CurrentDieType, ChatLog.AllRolls);
         }
 
         public async Task AddToStatsDict(string character) {
-            CurrentStats.Add(character, new RollStatsCharacter(CurrentDieType, character, ChatLog.AllRolls));
+            CurrentStats.Add(character, new RollStats(CurrentDieType, character, ChatLog.AllRolls));
         }
 
         public async Task RemoveFromStatsDict(string character) {

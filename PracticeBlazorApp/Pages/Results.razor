@@ -44,25 +44,25 @@
                     <th scope="col">Character</th>
                     <th scope="col">Total Rolls</th>
                     <th scope="col">Average Roll</th>
-                    <th scope="col" colspan="@RollStatsCharacter.RollKeys.Length" class="tableSwitchHeader">Rolls by Count</th>
+                    <th scope="col" colspan="@RollStats.RollKeys.Length" class="tableSwitchHeader">Rolls by Count</th>
                 </tr>
 
                 <tr>
                     <th></th>
                     <th></th>
                     <th></th>
-                    @foreach (var key in RollStatsCharacter.RollKeys) {
+                    @foreach (var key in RollStats.RollKeys) {
                         <th>@key</th>
                     }
                 </tr>
 
                 <tr>
                     <td>Global Total</td>
-                    <td>0</td>
-                    <td>0</td>
+                    <td>@ChatLogState.CurrentGlobalStats.TotalRollsCount</td>
+                    <td>@ChatLogState.CurrentGlobalStats.AverageRoll</td>
 
-                    @foreach (var key in RollStatsCharacter.RollKeys) {
-                        <td>0</td>
+                    @foreach (var key in RollStats.RollKeys) {
+                        <td>@ChatLogState.CurrentGlobalStats.RollsCount[key]</td>
                     }
                 </tr>
 
@@ -71,7 +71,7 @@
                     <td>@ChatLogState.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
                     <td>@GroupAverage()</td>
 
-                    @foreach (var key in RollStatsCharacter.RollKeys) {
+                    @foreach (var key in RollStats.RollKeys) {
                         <td>@ChatLogState.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum()</td>
                     }
                 </tr>
@@ -94,8 +94,6 @@
 </div>
 
 @code {
-    RollStatsCharacter globalStats = new RollStatsCharacter(ChatLogState.CurrentDieType, ChatLogState.ChatLog.AllRolls)
-
     public decimal GroupAverage() {
         decimal runningTotalSum = 0;
         int runningTotalCount = 0;
@@ -114,7 +112,7 @@
         }
 
         ChatLogState.CurrentDieType = newDie;
-        RollStatsCharacter.SetRollKeys(newDie);
+        RollStats.SetRollKeys(newDie);
         await ChatLogState.SetStatsDict();
     }
 

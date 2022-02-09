@@ -19,7 +19,6 @@ namespace PracticeBlazorApp.Shared {
         public HtmlDocument HtmlDoc { get; set; } = new();
         public List<string> AllCharacters { get; set; } = new();
         public List<Roll> AllRolls { get; set; } = new();
-        public RollStatsCharacter GlobalStats { get; set; }
 
         private void GetAllRolls() {
             AllRolls.Add(new Roll("Adam", 20, "d100"));

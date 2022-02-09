@@ -1,18 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PracticeBlazorApp {
-    public class RollStatsGlobal {
+    public class RollStats {
+
         public int TotalRollsCount { get; private set; } = 0;
         public decimal AverageRoll { get; private set; } = 0;
         public static string[] RollKeys { get; private set; } = Array.Empty<string>();
         public Dictionary<string, int> RollsCount { get; private set; } = new();
         public Dictionary<string, decimal> RollsPercent { get; private set; } = new();
 
-        public RollStatsGlobal(string dieType) {
+        public RollStats() {}
+
+        public RollStats(string dieType, List<Roll> rolls) {
             SetRollKeys(dieType);
+            ParseRolls(dieType, rolls);
+        }
+
+        public RollStats(string dieType, string character, List<Roll> rolls) {
+            SetRollKeys(dieType);
+            ParseRolls(dieType, character, rolls);
         }
 
         public static void SetRollKeys(string dieType) {
@@ -24,10 +32,14 @@ namespace PracticeBlazorApp {
                 : RollKeys = Array.Empty<string>();
         }
 
-        private void ParseRolls(string dieType, string character, List<Roll> rolls) {
+        private void ParseRolls(string dieType, List<Roll> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
+        private void ParseRolls(string dieType, string character, List<Roll> rolls) => ParseRolls(dieType, character, rolls, true);
+        private void ParseRolls(string dieType, string character, List<Roll> rolls, bool shouldFilter) {
             int runningTotal = 0;
+            RollsCount = RollKeys.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
+
             foreach (Roll roll in rolls) {
-                if (roll.RolledBy != character) {
+                if (shouldFilter && roll.RolledBy != character) {
                     continue;
                 }
 
@@ -38,7 +50,6 @@ namespace PracticeBlazorApp {
                 TotalRollsCount++;
                 runningTotal += roll.Value;
 
-                RollsCount = RollKeys.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
                 GetRollKeys(roll.Value).ForEach(k => RollsCount[k]++);
             }
 
