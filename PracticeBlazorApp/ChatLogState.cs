@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PracticeBlazorApp {
     public class ChatLogState {
-        public ChatLog ChatLog { get; set; } = new("");
+        public ChatLog ChatLog { get; set; }
         public List<string> CurrentCharacters { get; set; } = new();
         public string CurrentDieType { get; set; } = "";
         public Dictionary<string, RollStats> CurrentStats { get; set; } = new();
