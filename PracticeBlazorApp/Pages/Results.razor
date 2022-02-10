@@ -9,8 +9,10 @@
                 <div>
                     <select @onchange="DieSelected">
                         <option value=""></option>
-                        <option value="d20">d20</option>
-                        <option value="d100">d100</option>
+                        @foreach (var dieType in ChatLogState.ChatLog.AllDieTypes)
+                        {
+                            <option value="@dieType">@dieType</option>
+                        }
                     </select>
                 </div>
 
@@ -90,6 +92,14 @@
             </table>
         </div>
     </div>
+
+    @foreach (Roll roll in ChatLogState.ChatLog.AllRolls)
+    {
+        <p>
+            @($"{roll.RolledBy} rolled a {roll.DieType}: {roll.Value}")
+        </p>
+    }
+
 </div>
 
 @code {

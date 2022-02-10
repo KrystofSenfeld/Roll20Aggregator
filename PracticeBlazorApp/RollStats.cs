@@ -7,6 +7,7 @@ namespace PracticeBlazorApp {
 
         public int TotalRollsCount { get; private set; } = 0;
         public decimal AverageRoll { get; private set; } = 0;
+        public static HashSet<string> ValidDieTypes { get; } = new() { "d4", "d6", "d8", "d10", "d12", "d20", "d100" };
         public static string[] RollKeys { get; private set; } = Array.Empty<string>();
         public Dictionary<string, int> RollsCount { get; private set; } = new();
         public Dictionary<string, decimal> RollsPercent { get; private set; } = new();
@@ -24,12 +25,33 @@ namespace PracticeBlazorApp {
         }
 
         public static void SetRollKeys(string dieType) {
-            RollKeys =
-                dieType == "d20" ?
-                    RollKeys = new string[] { "1", "1-5", "6-10", "11-15", "16-20", "20" }
-                : dieType == "d100" ?
-                    RollKeys = new string[] { "1", "1-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70", "71-80", "81-90", "91-100", "100" }
-                : RollKeys = Array.Empty<string>();
+            switch(dieType)
+            {
+                case "d4":
+                    RollKeys = new string[] { "1", "2", "3", "4" };
+                    break;
+                case "d6":
+                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6" };
+                    break;
+                case "d8":
+                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8" };
+                    break;
+                case "d10":
+                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+                    break;
+                case "d12":
+                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" };
+                    break;
+                case "d20":
+                    RollKeys = new string[] { "1", "1-5", "6-10", "11-15", "16-20", "20" };
+                    break;
+                case "d100":
+                    RollKeys = new string[] { "1", "1-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70", "71-80", "81-90", "91-100", "100" };
+                    break;
+                default:
+                    RollKeys = Array.Empty<string>();
+                    break;
+            }
         }
 
         private void ParseRolls(string dieType, List<Roll> rolls) => ParseRolls(dieType, string.Empty, rolls, false);

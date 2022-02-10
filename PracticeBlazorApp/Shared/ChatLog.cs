@@ -9,99 +9,129 @@ using System.Threading.Tasks;
 
 namespace PracticeBlazorApp.Shared {
     public class ChatLog {
+        private HashSet<string> allCharacters = new();
+        private HashSet<string> allDieTypes = new();
+        private Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
+        private Regex dieTypeShortQuery = new Regex("[0-9]*(d[0-9]+)\"");
+        private Regex rollValueQuery = new Regex(">([0-9]+)</");
+
         public ChatLog(string html) {
             HtmlDoc.LoadHtml(html);
             GetAllRolls();
-            AllCharacters = AllRolls.Select(r => r.RolledBy).Distinct().ToList();
+
+            AllCharacters = allCharacters.ToList()
+                .OrderBy(c => c)
+                .ToList();
+
+            AllDieTypes = RollStats.ValidDieTypes.ToList()
+                .Where(d => allDieTypes.Contains(d))
+                .ToList();
         }
 
         public HtmlDocument HtmlDoc { get; set; } = new();
-        public List<string> AllCharacters { get; set; } = new();
         public List<Roll> AllRolls { get; set; } = new();
+        public List<string> AllCharacters { get; set; } = new();
+        public List<string> AllDieTypes { get; set; } = new();
 
         private void GetAllRolls() {
-            string author, prevAuthor = null;
-            Regex messageQuery = new Regex("<div class=\"message(.*?)</div>(?=<div class=\"message)");
-            Regex dieTypeQuery = new Regex("Rolling [0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
-            Regex rollValueQuery = new Regex(">([0-9]+)</");
+            string author = null;
+            string prevAuthor = null;
 
             var messages = HtmlDoc.DocumentNode.SelectNodes("//div[contains(@class, \"message\")]");
 
             foreach (var message in messages)
             {
                 var classes = message.GetClasses();
+                GetAuthor(classes, message, ref author, ref prevAuthor);
 
-                author = ParseAuthor(classes, message);
-                if (string.IsNullOrEmpty(author))
-                {
-                    author = prevAuthor;
-                }
-                else
-                {
-                    prevAuthor = author;
-                }
-                Console.WriteLine(author);
-
+                // Parsing roll block
                 if (classes.Contains("rollresult"))
                 {
-                    string dieType = dieTypeQuery.Match(message.SelectSingleNode(".//div[contains(@class, \"formula\")]").InnerText).Groups[0]?.Value;
-                    var rollTexts = message.SelectNodes(".//div[contains(@class, 'didroll')]");
+                    HtmlNode diceRollNode = message.SelectSingleNode(".//div[contains(@class, \"diceroll\")]");
 
-                    foreach (var rollText in rollTexts)
+                    if (diceRollNode != null)
                     {
-                        int.TryParse(rollText.InnerText, out int rollValue);
-                        AllRolls.Add(new Roll(author, rollValue, dieType));
-                    }
+                        string dieType = dieTypeShortQuery.Match(diceRollNode.OuterHtml).Groups[1].Value;
+                        var rollTexts = message.SelectNodes(".//div[contains(@class, 'didroll')]");
 
-                    continue;
-                }
-                else
-                {
-                    var rollList = message.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
+                        foreach (var rollText in rollTexts)
+                        {
+                            int.TryParse(rollText.InnerText, out int rollValue);
+                            RegisterRoll(author, rollValue, dieType);
+                        }
 
-                    if (rollList == null) {
                         continue;
                     }
-
-                    foreach (var roll in rollList)
-                    {
-                        string[] rollText = new[] {
-                            roll.GetAttributeValue("title", null),
-                            roll.GetAttributeValue("original-title", null),
-                        };
-
-                        foreach (string text in rollText)
-                        {
-                            if (!string.IsNullOrEmpty(text))
-                            {
-                                var dieType = dieTypeQuery.Match(text);
-                                var rollValues = rollValueQuery.Matches(text);
-
-                                for (int i = 0; i < rollValues.Count; i++)
-                                {
-                                    int.TryParse(rollValues[i].Groups[0].Value, out int rollValue);
-                                    AllRolls.Add(new Roll(author, rollValue, dieType.Value));
-                                }
-                            }
-                        }
-                    }
                 }
+
+                ParseInlineRolls(message, author); // This is done for all messages since roll blocks can, rarely, contain inline rolls.
             }
         }
 
-        private string ParseAuthor(IEnumerable<string> nodeClasses, HtmlNode node)
+        private void GetAuthor(IEnumerable<string> nodeClasses, HtmlNode node, ref string author, ref string prevAuthor)
         {
             Regex authorQuery = new Regex(@"\S*");
 
             if (nodeClasses.Contains("emote"))
             {
-                return authorQuery.Match(node.InnerText).Value;
+                author = authorQuery.Match(node.InnerText).Value;
             }
             else
             {
                 string tempAuthor = node.SelectSingleNode(".//span[contains(@class, \"by\")]")?.InnerText;
-                return tempAuthor?.Remove(tempAuthor.Length - 1);
+                author = tempAuthor?.Remove(tempAuthor.Length - 1);
             }
+
+            if (string.IsNullOrEmpty(author))
+            {
+                author = prevAuthor;
+            }
+            else
+            {
+                prevAuthor = author;
+            }
+        }
+
+        private void ParseInlineRolls(HtmlNode message, string author)
+        {
+            var rollNodeList = message.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
+
+            if (rollNodeList == null)
+            {
+                return;
+            }
+
+            foreach (var rollNode in rollNodeList)
+            {
+                string[] rollNodeAttrTexts = new[] {
+                        rollNode.GetAttributeValue("title", null),
+                        rollNode.GetAttributeValue("original-title", null),
+                    };
+
+                foreach (string rollNodeAttrText in rollNodeAttrTexts)
+                {
+                    if (string.IsNullOrEmpty(rollNodeAttrText))
+                    {
+                        continue;
+                    }
+
+                    string dieType = dieTypeQuery.Match(rollNodeAttrText).Groups[1].Value;
+                    var rollValues = rollValueQuery.Matches(rollNodeAttrText);
+
+                    for (int i = 0; i < rollValues.Count; i++)
+                    {
+                        int.TryParse(rollValues[i].Groups[1].Value, out int rollValue);
+                        RegisterRoll(author, rollValue, dieType);
+                    }
+                }
+            }
+        }
+
+        private void RegisterRoll(string author, int rollValue, string dieType)
+        {
+            AllRolls.Add(new Roll(author, rollValue, dieType));
+            allCharacters.Add(author);
+            allDieTypes.Add(dieType);
         }
     }
 }
