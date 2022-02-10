@@ -18,7 +18,7 @@ namespace PracticeBlazorApp {
 
         public async Task GetLogFromFile(IBrowserFile file) {
             string text;
-            using (StreamReader sr = new(file.OpenReadStream())) {
+            using (StreamReader sr = new(file.OpenReadStream(1024 * 1024 * 20))) {
                 text = await sr.ReadToEndAsync();
             }
 

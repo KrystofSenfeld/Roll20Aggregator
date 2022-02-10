@@ -44,18 +44,24 @@ namespace PracticeBlazorApp.Shared {
 
                 if (classes.Contains("rollresult"))
                 {
-                    string dieType = dieTypeQuery.Match(message.SelectSingleNode("//div[contains(@class, \"formula\")]").InnerText).Groups[0]?.Value;
-                    var rollTexts = message.SelectNodes("//div[contains(@class, 'didroll')]");
+                    string dieType = dieTypeQuery.Match(message.SelectSingleNode(".//div[contains(@class, \"formula\")]").InnerText).Groups[0]?.Value;
+                    var rollTexts = message.SelectNodes(".//div[contains(@class, 'didroll')]");
 
                     foreach (var rollText in rollTexts)
                     {
                         int.TryParse(rollText.InnerText, out int rollValue);
                         AllRolls.Add(new Roll(author, rollValue, dieType));
                     }
+
+                    continue;
                 }
                 else
                 {
-                    var rollList = message.SelectNodes("//span[contains(@class, \"inlinerollresult\")]");
+                    var rollList = message.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
+
+                    if (rollList == null) {
+                        continue;
+                    }
 
                     foreach (var roll in rollList)
                     {
@@ -93,7 +99,7 @@ namespace PracticeBlazorApp.Shared {
             }
             else
             {
-                string tempAuthor = node.SelectSingleNode("//span[contains(@class, \"by\")]")?.InnerText;
+                string tempAuthor = node.SelectSingleNode(".//span[contains(@class, \"by\")]")?.InnerText;
                 return tempAuthor?.Remove(tempAuthor.Length - 1);
             }
         }
