@@ -4,6 +4,42 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+.main-content {
+    -ms-flex: 1 0 auto;
+    -webkit-flex: 1 0 auto;
+    flex: 1 0 auto;
+    padding-top: 51px;
+}
+
+.splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow: auto;
+}
+
+    .splash .content {
+        position: fixed;
+        top: 30%;
+        left: 0;
+        right: 0;
+        text-align: center;
+    }
+
+        .splash .content .loading .message {
+            margin-bottom: 16px;
+        }
+
+        .splash .content .loading div {
+            width: 16px;
+            height: 16px;
+            background-color: #F57B20;
+            border-radius: 100%;
+            display: inline-block;
+        }
+
 .form-field {
     display: flex;
     margin: 0.5rem;
