@@ -1,18 +1,24 @@
-﻿@inject NavigationManager NavigationManager
-@inject ChatLogState ChatLogState
+﻿@using PracticeBlazorApp.Models
+@inject NavigationManager NavigationManager
+@inject ChatLogState ChatLogState 
 
-<h3>FileUpload</h3>
+<EditForm Model="fileUpload">
+    <DataAnnotationsValidator />
+    <InputFile OnChange="UploadFileAndParse"/>
+</EditForm>
 
-<InputFile OnChange="UploadFile"/>
 
 @code {
-    public bool IsLoading { get; private set; }
+    private FileUploadModel fileUpload = new();
+    private bool isLoading;
 
-    private async Task UploadFile(InputFileChangeEventArgs e) {
-        IsLoading = true;
-        await ChatLogState.GetLogFromFile(e.File);
+    private async void UploadFileAndParse(InputFileChangeEventArgs e) {
+        isLoading = true;
 
-        IsLoading = false;
+        ChatLogState.Init(e.File);
+        await ChatLogState.ChatLog.Parser.Parse();
+        isLoading = false;
+
         NavigationManager.NavigateTo("/results");
     }
 }

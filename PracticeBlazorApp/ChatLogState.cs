@@ -16,13 +16,9 @@ namespace PracticeBlazorApp {
         public Dictionary<string, RollStats> CurrentStats { get; set; } = new();
         public RollStats CurrentGlobalStats { get; set; } = new();
 
-        public async Task GetLogFromFile(IBrowserFile file) {
-            string text;
-            using (StreamReader sr = new(file.OpenReadStream(1024 * 1024 * 20))) {
-                text = await sr.ReadToEndAsync();
-            }
-
-            ChatLog = new ChatLog(text);
+        public void Init(IBrowserFile file)
+        {
+            ChatLog = new ChatLog(file);
         }
 
         public async Task SetStatsDict() {
