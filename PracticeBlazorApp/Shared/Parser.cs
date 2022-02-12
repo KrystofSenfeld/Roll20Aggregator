@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using PracticeBlazorApp.Models;
 
 namespace PracticeBlazorApp.Shared
 {
@@ -42,13 +43,14 @@ namespace PracticeBlazorApp.Shared
 
         private async Task ReadFile()
         {
-            using (StreamReader stream = new(chatLog.UploadedFile.OpenReadStream()))
+            using (StreamReader stream = new(chatLog.UploadedFile.OpenReadStream(FileUploadModel.MaxFileSize)))
             {
                 int bufferSize = 1024 * 10; // 10 KB
                 char[] buffer = new char[bufferSize];
                 StringBuilder adjustedBuffer = new();
 
                 string messageTag = "<div class=\"message";
+                string endTag = "<script";
                 bool foundFirst = false;
                 int foundIndex;
 
@@ -63,7 +65,7 @@ namespace PracticeBlazorApp.Shared
                         if (foundFirst) {
                             HtmlDocument htmlDoc = new();
                             htmlDoc.LoadHtml(messageTag + adjustedBufferString.Substring(0, foundIndex));
-                            ParseMessageForRolls(adjustedBufferString.Substring(0, foundIndex));
+                            ParseMessageForRolls(htmlDoc);
                         } else {
                             foundFirst = true;
                         }
@@ -71,17 +73,26 @@ namespace PracticeBlazorApp.Shared
                         adjustedBufferString = adjustedBuffer.ToString();
                     }
 
-                    if (!adjustedBufferString.Contains(messageTag.First())) {
+                    if (adjustedBufferString.Contains(endTag)) {
+                        HtmlDocument htmlDoc = new();
+                        htmlDoc.LoadHtml(messageTag + adjustedBufferString);
+                        ParseMessageForRolls(htmlDoc);
+                    } else if (!adjustedBufferString.Contains(messageTag.First())) {
                         adjustedBuffer.Clear();
                     }
                 }
             }
         }
 
-        private void ParseMessageForRolls(string message)
+        private void ParseMessageForRolls(HtmlDocument htmlDoc)
         {
-            // var message = htmlDoc.DocumentNode; //SelectSingleNode("//div[contains(@class, \"message\")]");
-            var classes = message.Substring(0, message.IndexOf('"'));
+            var message = htmlDoc.DocumentNode.SelectSingleNode("//div[contains(@class, \"message\")]");
+
+            if (message == null) {
+                return;
+            }
+
+            var classes = message.GetClasses();
             GetAuthor(classes, message, ref author, ref prevAuthor);
 
             // Parsing roll block
@@ -113,10 +124,9 @@ namespace PracticeBlazorApp.Shared
             //}
         }
 
-        private void GetAuthor(string nodeClasses, string message, ref string author, ref string prevAuthor)
+        private void GetAuthor(IEnumerable<string> nodeClasses, HtmlNode node, ref string author, ref string prevAuthor)
         {
             Regex authorEmoteQuery = new Regex(@"\S*");
-            Regex authorQuery = new Regex("<span class=\"by\">(\\w*):</span>");
 
             if (nodeClasses.Contains("emote"))
             {
@@ -124,8 +134,8 @@ namespace PracticeBlazorApp.Shared
             }
             else
             {
-                var authorMatch = authorQuery.Match(node.InnerText);
-                author = authorMatch.Success ? authorMatch.Groups[1].Value : null; //node.SelectSingleNode(".//span[contains(@class, \"by\")]")?.InnerText;
+                string tempAuthor = node.SelectSingleNode(".//span[contains(@class, \"by\")]")?.InnerText;
+                author = tempAuthor?.Remove(tempAuthor.Length - 1);
             }
 
             if (string.IsNullOrEmpty(author))
