@@ -14,9 +14,7 @@
 
     private async void UploadFileAndParse(InputFileChangeEventArgs e) {
         isLoading = true;
-
-        ChatLogState.Init(e.File);
-        await ChatLogState.ChatLog.Parser.Parse();
+        await ChatLogState.GetLogFromFile(e.File);
         isLoading = false;
 
         NavigationManager.NavigateTo("/results");
