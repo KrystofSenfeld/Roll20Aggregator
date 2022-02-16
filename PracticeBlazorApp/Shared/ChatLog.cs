@@ -11,8 +11,12 @@ namespace PracticeBlazorApp.Shared {
     public class ChatLog {
         private HashSet<string> allCharacters = new();
         private HashSet<string> allDieTypes = new();
+
+        private Dictionary<string, HashSet<string>> AvatarToCharacter = new();
+        private List<Roll> EmoteRolls = new();
+
         private Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
-        private Regex dieTypeShortQuery = new Regex("[0-9]*(d[0-9]+)\"");
+        private Regex dieTypeShortQuery = new Regex("[0-9]*(d[0-9]+)\"", RegexOptions.IgnoreCase);
         private Regex rollValueQuery = new Regex(">([0-9]+)</");
 
         public ChatLog(string html) {
@@ -34,86 +38,140 @@ namespace PracticeBlazorApp.Shared {
         public List<string> AllDieTypes { get; set; } = new();
 
         private void GetAllRolls() {
-            string author = null;
-            string prevAuthor = null;
+            HtmlNode contentNode = HtmlDoc.DocumentNode.SelectSingleNode("//div[contains(@class, \"content\")]");
+            HtmlNode messageNode = contentNode?.FirstChild;
 
-            var messages = HtmlDoc.DocumentNode.SelectNodes("//div[contains(@class, \"message\")]");
+            if (messageNode == null) {
+                // Handle invalid html - no messages!
+            }
 
-            foreach (var message in messages) {
-                var classes = message.GetClasses();
-                GetAuthor(classes, message, ref author, ref prevAuthor);
+            while (messageNode != null) {
+                IEnumerable<string> classes = messageNode.GetClasses();
+                
+                // Skip desc messages?
 
-                // Parsing roll block
                 if (classes.Contains("rollresult")) {
-                    HtmlNode diceRollNode = message.SelectSingleNode(".//div[contains(@class, \"diceroll\")]");
-
-                    if (diceRollNode != null) {
-                        string dieType = dieTypeShortQuery.Match(diceRollNode.OuterHtml).Groups[1].Value;
-                        var rollTexts = message.SelectNodes(".//div[contains(@class, 'didroll')]");
-
-                        foreach (var rollText in rollTexts) {
-                            int.TryParse(rollText.InnerText, out int rollValue);
-                            RegisterRoll(author, rollValue, dieType);
-                        }
-
-                        continue;
-                    }
+                    ParseForRollBlock(messageNode);
                 }
 
-                ParseInlineRolls(message, author); // This is done for all messages since roll blocks can, rarely, contain inline rolls.
+                // This is done for all messages since roll blocks can, rarely, contain inline rolls.
+                ParseForInlineRolls(messageNode, classes);
+
+                messageNode = messageNode.NextSibling;
             }
+
+            TryResolveEmoteEntries();
         }
 
-        private void GetAuthor(IEnumerable<string> nodeClasses, HtmlNode node, ref string author, ref string prevAuthor) {
-            Regex authorQuery = new Regex(@"\S*");
+        private void ParseForRollBlock(HtmlNode messageNode) {
+            HtmlNode rollResultNode = messageNode.SelectSingleNode(".//div[contains(@class, \"diceroll\")]");
 
-            if (nodeClasses.Contains("emote")) {
-                author = authorQuery.Match(node.InnerText).Value;
-            } else {
-                string tempAuthor = node.SelectSingleNode(".//span[contains(@class, \"by\")]")?.InnerText;
-                author = tempAuthor?.Remove(tempAuthor.Length - 1);
-            }
-
-            if (string.IsNullOrEmpty(author)) {
-                author = prevAuthor;
-            } else {
-                prevAuthor = author;
-            }
-        }
-
-        private void ParseInlineRolls(HtmlNode message, string author) {
-            var rollNodeList = message.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
-
-            if (rollNodeList == null) {
+            if (rollResultNode == null) {
                 return;
             }
 
-            foreach (var rollNode in rollNodeList) {
-                string[] rollNodeAttrTexts = new[] {
-                        rollNode.GetAttributeValue("title", null),
-                        rollNode.GetAttributeValue("original-title", null),
-                    };
+            string character = GetCharacterAndAvatar(messageNode);
+            string dieType = rollResultNode.GetClasses().ToArray()[1].ToLowerInvariant();
 
-                foreach (string rollNodeAttrText in rollNodeAttrTexts) {
-                    if (string.IsNullOrEmpty(rollNodeAttrText)) {
-                        continue;
-                    }
+            List<HtmlNode> rollNodes = messageNode.SelectNodes(".//div[contains(@class, 'didroll')]").ToList();
+            rollNodes.ForEach(r => RegisterRoll(character, int.Parse(r.InnerText), dieType));
+        }
 
-                    string dieType = dieTypeQuery.Match(rollNodeAttrText).Groups[1].Value;
-                    var rollValues = rollValueQuery.Matches(rollNodeAttrText);
+        private void ParseForInlineRolls(HtmlNode messageNode, IEnumerable<string> classes) {
+            var rollNodes = messageNode.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
 
-                    for (int i = 0; i < rollValues.Count; i++) {
-                        int.TryParse(rollValues[i].Groups[1].Value, out int rollValue);
-                        RegisterRoll(author, rollValue, dieType);
-                    }
+            if (rollNodes == null) {
+                return;
+            }
+
+            foreach (var rollNode in rollNodes) {
+                string rollNodeAttr = rollNode.GetAttributeValue("title", null) ?? rollNode.GetAttributeValue("original-title", null);
+
+                if (string.IsNullOrEmpty(rollNodeAttr)) {
+                    continue;
+                }
+
+                string dieType = dieTypeQuery.Match(rollNodeAttr).Groups[1].Value;
+                List<Match> rollValues = rollValueQuery.Matches(rollNodeAttr).ToList();
+
+                if (classes.Contains("emote")) {
+                    string character = messageNode.InnerText;
+                    rollValues.ForEach(r => EmoteRolls.Add(new Roll(character, int.Parse(r.Groups[1].Value), dieType)));   
+                } else {
+                    string character = GetCharacterAndAvatar(messageNode);
+                    rollValues.ForEach(r => RegisterRoll(character, int.Parse(r.Groups[1].Value), dieType));
                 }
             }
+        }
+
+        private string GetCharacterAndAvatar(HtmlNode messageNode) {
+            Regex authorQuery = new Regex(@"\S*");
+
+            HtmlNode authorNode = null;
+            while (authorNode == null) {
+                authorNode = messageNode.SelectSingleNode(".//span[contains(@class, \"by\")]");
+                if (authorNode != null) {
+                    HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]");
+                    string avatar = avatarNode.InnerHtml;
+                    string character = authorNode.InnerText[0..^1];
+                    AvatarToCharacter.Add(avatar, character);
+
+                    return character;
+                }
+
+                messageNode = messageNode.PreviousSibling;
+            }
+
+            return null;
         }
 
         private void RegisterRoll(string author, int rollValue, string dieType) {
             AllRolls.Add(new Roll(author, rollValue, dieType));
             allCharacters.Add(author);
             allDieTypes.Add(dieType);
+        }
+
+        private int TryResolveEmoteEntries() {
+            int unresolvedEntires = 0;
+
+            foreach (var emoteRoll in EmoteRolls) {
+                // Check the AvatarToCharacter dictionary for this avatar.
+                AvatarToCharacter.TryGetValue(emoteRoll.RolledBy, out HashSet<string> characterList);
+
+                // If there is only one author for this avatar, use that author. This is the simplest case.
+                if (characterList.Count == 1) {
+
+                    continue;
+                }
+
+                // If there is more than one author, it means multiple characters used the same avatar, or a single character
+                // used the avatar and changed their name. Search for the longest possible author match inside the emote message
+                // from the dictionary entry for this avatar.
+                if (characterList.Count > 1) {
+
+                    continue;
+                }
+
+                // If there is no avatar, search for the longest possible author match inside the emote message from the
+                // list of confirmed authors.
+                string characterResult = SearhEmoteMessageForLongestMatch();
+                if (!string.IsNullOrEmpty(characterResult)) {
+
+                    continue;
+                }
+
+                // If there is still no match, default to the first word of the emote message. Return the number of these cases.
+
+                unresolvedEntires++;
+            }
+
+            return unresolvedEntires;
+        }
+
+        private string SearhEmoteMessageForLongestMatch() {
+
+
+            return null;
         }
     }
 }
