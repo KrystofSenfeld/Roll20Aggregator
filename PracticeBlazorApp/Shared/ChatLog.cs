@@ -12,6 +12,7 @@ namespace PracticeBlazorApp.Shared {
     public class ChatLog {
         private HashSet<string> allCharacters = new();
         private HashSet<string> allDieTypes = new();
+        private Roll[] allRolls = new Roll[0];
 
         private Dictionary<string, string[]> AvatarToCharacter = new();
         private List<Roll> EmoteRolls = new();
@@ -49,7 +50,10 @@ namespace PracticeBlazorApp.Shared {
             while (messageNode != null) {
                 IEnumerable<string> classes = messageNode.GetClasses();
                 
-                // Skip desc messages?
+                if (classes.Contains("desc")) {
+                    messageNode = messageNode.NextSibling;
+                    continue;
+                }
 
                 if (classes.Contains("rollresult")) {
                     ParseForRollBlock(messageNode);
@@ -106,14 +110,12 @@ namespace PracticeBlazorApp.Shared {
         }
 
         private string GetCharacterAndAvatar(HtmlNode messageNode) {
-            Regex authorQuery = new Regex(@"\S*");
-
             HtmlNode authorNode = null;
             while (authorNode == null) {
                 authorNode = messageNode.SelectSingleNode(".//span[contains(@class, \"by\")]");
                 if (authorNode != null) {
-                    HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]");
-                    string avatar = avatarNode.InnerHtml;
+                    HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]").FirstChild;
+                    string avatar = avatarNode != null ? avatarNode.GetAttributeValue("img", string.Empty) : string.Empty;
                     string character = authorNode.InnerText[0..^1];
                     AddToAvatarToCharacter(avatar, character);
 
@@ -175,7 +177,8 @@ namespace PracticeBlazorApp.Shared {
                     }
 
                     // If there is still no match, default to the first word of the emote message. Return the number of these cases.
-                    RegisterRoll(characterResult, emoteRoll.Value, emoteRoll.DieType);
+                    Regex authorQuery = new Regex(@"\S*");
+                    RegisterRoll(authorQuery.Match(emoteRoll.RolledBy).Value, emoteRoll.Value, emoteRoll.DieType);
                     Debug.WriteLine($"Changed {emoteRoll.RolledBy} to {characterResult}");
                     unresolvedEntires++;
                 }
