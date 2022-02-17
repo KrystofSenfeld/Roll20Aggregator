@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Forms;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -12,7 +13,7 @@ namespace PracticeBlazorApp.Shared {
         private HashSet<string> allCharacters = new();
         private HashSet<string> allDieTypes = new();
 
-        private Dictionary<string, HashSet<string>> AvatarToCharacter = new();
+        private Dictionary<string, string[]> AvatarToCharacter = new();
         private List<Roll> EmoteRolls = new();
 
         private Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
@@ -114,7 +115,7 @@ namespace PracticeBlazorApp.Shared {
                     HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]");
                     string avatar = avatarNode.InnerHtml;
                     string character = authorNode.InnerText[0..^1];
-                    AvatarToCharacter.Add(avatar, character);
+                    AddToAvatarToCharacter(avatar, character);
 
                     return character;
                 }
@@ -131,45 +132,64 @@ namespace PracticeBlazorApp.Shared {
             allDieTypes.Add(dieType);
         }
 
+        private void AddToAvatarToCharacter(string avatar, string character) {
+            avatar ??= string.Empty;
+
+            if (AvatarToCharacter.ContainsKey(avatar)) {
+                AvatarToCharacter[avatar].Append(character);
+            } else {
+                AvatarToCharacter[avatar] = new string[] { character };
+            }
+        }
+
         private int TryResolveEmoteEntries() {
             int unresolvedEntires = 0;
 
             foreach (var emoteRoll in EmoteRolls) {
                 // Check the AvatarToCharacter dictionary for this avatar.
-                AvatarToCharacter.TryGetValue(emoteRoll.RolledBy, out HashSet<string> characterList);
+                bool foundAvatar = AvatarToCharacter.TryGetValue(emoteRoll.RolledBy, out string[] characterList);
 
-                // If there is only one author for this avatar, use that author. This is the simplest case.
-                if (characterList.Count == 1) {
+                if (foundAvatar) {
+                    // If there is only one author for this avatar, use that author. This is the simplest case.
+                    if (characterList.Length == 1) {
+                        RegisterRoll(characterList[0], emoteRoll.Value, emoteRoll.DieType);
+                        Debug.WriteLine($"Changed {emoteRoll.RolledBy} to {characterList[0]}");
+                        continue;
+                    }
 
-                    continue;
+                    // If there is more than one author, it means multiple characters used the same avatar, or a single character
+                    // used the avatar and changed their name. Search for the longest possible author match inside the emote message
+                    // from the dictionary entry for this avatar.
+                    string characterResult = SearchForLongestMatch(emoteRoll.RolledBy, characterList);
+                    RegisterRoll(characterResult, emoteRoll.Value, emoteRoll.DieType);
+                    Debug.WriteLine($"Changed {emoteRoll.RolledBy} to {characterResult}");
+                } else {
+                    // If there is no avatar, search for the longest possible author match inside the emote message from the
+                    // list of confirmed authors.
+                    string characterResult = SearchForLongestMatch(emoteRoll.RolledBy, allCharacters);
+                    if (!string.IsNullOrEmpty(characterResult)) {
+                        AddToAvatarToCharacter(emoteRoll.RolledBy, characterResult);
+                        RegisterRoll(characterResult, emoteRoll.Value, emoteRoll.DieType);
+                        Debug.WriteLine($"Changed {emoteRoll.RolledBy} to {characterResult}");
+                        continue;
+                    }
+
+                    // If there is still no match, default to the first word of the emote message. Return the number of these cases.
+                    RegisterRoll(characterResult, emoteRoll.Value, emoteRoll.DieType);
+                    Debug.WriteLine($"Changed {emoteRoll.RolledBy} to {characterResult}");
+                    unresolvedEntires++;
                 }
-
-                // If there is more than one author, it means multiple characters used the same avatar, or a single character
-                // used the avatar and changed their name. Search for the longest possible author match inside the emote message
-                // from the dictionary entry for this avatar.
-                if (characterList.Count > 1) {
-
-                    continue;
-                }
-
-                // If there is no avatar, search for the longest possible author match inside the emote message from the
-                // list of confirmed authors.
-                string characterResult = SearhEmoteMessageForLongestMatch();
-                if (!string.IsNullOrEmpty(characterResult)) {
-
-                    continue;
-                }
-
-                // If there is still no match, default to the first word of the emote message. Return the number of these cases.
-
-                unresolvedEntires++;
             }
 
             return unresolvedEntires;
         }
 
-        private string SearhEmoteMessageForLongestMatch() {
-
+        private string SearchForLongestMatch(string searchText, IEnumerable<string> searchTerms) {
+            foreach (string searchTerm in searchTerms) {
+                if (searchText[..searchTerm.Length] == searchTerm) {
+                    return searchTerm;
+                }
+            }
 
             return null;
         }
