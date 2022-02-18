@@ -15,7 +15,7 @@ namespace PracticeBlazorApp {
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-            builder.Services.AddScoped<ChatLogState>();
+            builder.Services.AddScoped<ParsingSession>();
 
             await builder.Build().RunAsync();
         }
