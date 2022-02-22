@@ -2,63 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PracticeBlazorApp {
+namespace Roll20Aggregator.Models {
     public class RollStats {
-
         public int TotalRollsCount { get; private set; } = 0;
         public decimal AverageRoll { get; private set; } = 0;
-        public static HashSet<string> ValidDieTypes { get; } = new() { "d4", "d6", "d8", "d10", "d12", "d20", "d100" };
-        public static string[] RollKeys { get; private set; } = Array.Empty<string>();
+        public static string[] RollCategories { get; private set; } = Array.Empty<string>();
         public Dictionary<string, int> RollsCount { get; private set; } = new();
         public Dictionary<string, decimal> RollsPercent { get; private set; } = new();
 
-        public RollStats() {}
+        public RollStats() { }
 
         public RollStats(string dieType, List<Roll> rolls) {
-            SetRollKeys(dieType);
+            RollCategories = RollKeys.GetRollKeys(dieType);
             ParseRolls(dieType, rolls);
         }
 
         public RollStats(string dieType, string character, List<Roll> rolls) {
-            SetRollKeys(dieType);
+            RollCategories = RollKeys.GetRollKeys(dieType);
             ParseRolls(dieType, character, rolls);
         }
 
         public static void SetRollKeys(string dieType) {
-            switch(dieType)
-            {
-                case "d4":
-                    RollKeys = new string[] { "1", "2", "3", "4" };
-                    break;
-                case "d6":
-                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6" };
-                    break;
-                case "d8":
-                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8" };
-                    break;
-                case "d10":
-                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-                    break;
-                case "d12":
-                    RollKeys = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" };
-                    break;
-                case "d20":
-                    RollKeys = new string[] { "1", "1-5", "6-10", "11-15", "16-20", "20" };
-                    break;
-                case "d100":
-                    RollKeys = new string[] { "1", "1-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70", "71-80", "81-90", "91-100", "100" };
-                    break;
-                default:
-                    RollKeys = Array.Empty<string>();
-                    break;
-            }
+            RollCategories = RollKeys.GetRollKeys(dieType);
         }
 
         private void ParseRolls(string dieType, List<Roll> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
         private void ParseRolls(string dieType, string character, List<Roll> rolls) => ParseRolls(dieType, character, rolls, true);
         private void ParseRolls(string dieType, string character, List<Roll> rolls, bool shouldFilter) {
             int runningTotal = 0;
-            RollsCount = RollKeys.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
+            RollsCount = RollCategories.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
 
             foreach (Roll roll in rolls) {
                 if (shouldFilter && roll.RolledBy != character) {
@@ -76,7 +48,7 @@ namespace PracticeBlazorApp {
             }
 
             AverageRoll = TotalRollsCount == 0 ? 0m : runningTotal / (decimal)TotalRollsCount;
-            RollsPercent = RollKeys.ToDictionary(
+            RollsPercent = RollCategories.ToDictionary(
                 keySelector: k => k,
                 elementSelector: k => TotalRollsCount == 0 ? 0m : RollsCount[k] / (decimal)TotalRollsCount
             );
@@ -86,7 +58,7 @@ namespace PracticeBlazorApp {
             List<string> keys = new();
             bool hasBeenFound = false;
 
-            foreach (var key in RollKeys) {
+            foreach (var key in RollCategories) {
                 if (IsInRange(roll, key)) {
                     keys.Add(key);
                     hasBeenFound = true;

@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using PracticeBlazorApp.Models;
+using Roll20Aggregator.Models;
+using Roll20Aggregator.Services;
 
-namespace PracticeBlazorApp.Shared {
+namespace Roll20Aggregator.Components {
     public partial class FileUpload {
         [Inject] NavigationManager NavigationManager { get; set; }
         [Inject] ParsingSession ParsingSession { get; set; }
 
-        private FileUploadModel fileUploadModel = new();
+        private readonly FileUploadModel fileUploadModel = new();
         private bool isLoading;
 
         private async void UploadFileAndParse(InputFileChangeEventArgs e) {

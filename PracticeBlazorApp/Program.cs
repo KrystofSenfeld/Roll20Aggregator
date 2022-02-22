@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Roll20Aggregator.Services;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PracticeBlazorApp {
+namespace Roll20Aggregator {
     public class Program {
         public static async Task Main(string[] args) {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);

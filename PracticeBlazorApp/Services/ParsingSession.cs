@@ -1,14 +1,11 @@
-﻿using HtmlAgilityPack;
-using Microsoft.AspNetCore.Components.Forms;
-using PracticeBlazorApp.Shared;
-using System;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Roll20Aggregator.Models;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace PracticeBlazorApp {
+namespace Roll20Aggregator.Services {
     public class ParsingSession {
         public ChatLog ChatLog { get; set; }
         public List<string> CurrentCharacters { get; set; } = new();

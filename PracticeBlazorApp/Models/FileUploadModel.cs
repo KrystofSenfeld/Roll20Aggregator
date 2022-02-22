@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components.Forms;
-using System.IO;
 
-namespace PracticeBlazorApp.Models
-{
-    public class FileUploadModel
-    {
+namespace Roll20Aggregator.Models {
+    public class FileUploadModel {
         public const int MaxFileSize = 1024 * 1024 * 50; // 50 MB
 
         [Required]

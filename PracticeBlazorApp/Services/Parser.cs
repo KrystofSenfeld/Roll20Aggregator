@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using Roll20Aggregator.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,18 +7,17 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace PracticeBlazorApp.Shared {
+namespace Roll20Aggregator.Services {
     public class Parser {
         private HashSet<string> allCharacters = new();
         private HashSet<string> allDieTypes = new();
 
-        private Roll[] allRolls = new Roll[0];
+        private Roll[] allRolls = Array.Empty<Roll>();
         private HashSet<int> emoteIndices = new();
         private Dictionary<string, string[]> AvatarToCharacter = new();
 
         private Regex authorQuery = new Regex(@"\S*");
         private Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
-        private Regex dieTypeShortQuery = new Regex("[0-9]*(d[0-9]+)\"", RegexOptions.IgnoreCase);
         private Regex rollValueQuery = new Regex(">([0-9]+)</");
 
         public async Task Parse(ChatLog chatLog) {
@@ -30,7 +30,7 @@ namespace PracticeBlazorApp.Shared {
                 .OrderBy(c => c)
                 .ToList();
 
-            chatLog.AllDieTypes = RollStats.ValidDieTypes.ToList()
+            chatLog.AllDieTypes = RollKeys.Keys.Keys.ToList()
                 .Where(d => allDieTypes.Contains(d))
                 .ToList();
 
