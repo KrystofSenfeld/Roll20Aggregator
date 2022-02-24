@@ -8,14 +8,22 @@ using System.Threading.Tasks;
 namespace Roll20Aggregator.Services {
     public class ParsingSession {
         public ChatLog ChatLog { get; set; }
+        public bool IsLoading { get; set; }
         public List<string> CurrentCharacters { get; set; } = new();
         public string CurrentDieType { get; set; } = "";
         public Dictionary<string, RollStats> CurrentStats { get; set; } = new();
         public RollStats CurrentGlobalStats { get; set; } = new();
 
-        public async Task GetChatLogFromFile(IBrowserFile file) {
+        public async Task StartSession(IBrowserFile file) {
+            IsLoading = true;
+
             ChatLog = new ChatLog();
             ChatLog.ChatLogFile = file;
+
+            Parser parser = new();
+            await parser.Parse(ChatLog);
+
+            IsLoading = false;
         }
 
         public async Task SetStatsDict() {

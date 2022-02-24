@@ -48,10 +48,11 @@ namespace Roll20Aggregator.Services {
 
         private async Task BufferedReadAndParse() {
             using (StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize))) {
-                int bufferSize = 1024 * 10; // 1 KB
+                int bufferSize = 1024 * 10; // 10 KB
                 char[] buffer = new char[bufferSize];
-                StringBuilder adjustedBuffer = new();
-                List<string> messagesFromBuffer = new();
+
+                StringBuilder bufferBuilder = new();
+                List<string> messages = new();
 
                 string messageTag = "<div class=\"message";
                 string endTag = "<script";
@@ -59,37 +60,39 @@ namespace Roll20Aggregator.Services {
                 int foundIndex;
 
                 while (await stream.ReadAsync(buffer, 0, bufferSize) > 0) {
-                    adjustedBuffer.Append(new string(buffer));
-                    string adjustedBufferString = adjustedBuffer.ToString();
+                    bufferBuilder.Append(new string(buffer));
+                    string adjustedBufferString = bufferBuilder.ToString();
 
                     // Search buffer for occurrences of message opening tags and add messages to list
                     while ((foundIndex = adjustedBufferString.IndexOf(messageTag)) >= 0) {
                         if (foundFirst) {
-                            messagesFromBuffer.Add(messageTag + adjustedBufferString.Substring(0, foundIndex));
+                            messages.Add(messageTag + adjustedBufferString[..foundIndex]);
                         } else {
                             foundFirst = true;
                         }
-                        adjustedBuffer.Remove(0, foundIndex + messageTag.Length);
-                        adjustedBufferString = adjustedBuffer.ToString();
+                        bufferBuilder.Remove(0, foundIndex + messageTag.Length);
+                        adjustedBufferString = bufferBuilder.ToString();
                     }
 
-                    // Handle what's left in the buffer after all messages have been found.
-                    // If there is a <, don't clear the buffer, as maybe the buffer split a message or end tag.
+                    // Check if we've reached the end of the document, and assume
+                    // what's left is a message.
                     if (adjustedBufferString.Contains(endTag)) {
-                        messagesFromBuffer.Add(messageTag + adjustedBufferString + "></script>");
-                    } else if (!adjustedBufferString.Contains(messageTag.First())) {
-                        adjustedBuffer.Clear();
+                        messages.Add(messageTag + adjustedBufferString + "></script>");
                     }
 
-                    foreach (string message in messagesFromBuffer) {
-                        Console.WriteLine("----------------<>---------------");
-                        Console.WriteLine(message);
+                    foreach (string message in messages) {
                         HtmlDocument htmlDoc = new();
                         htmlDoc.LoadHtml(message);
                         ParseMessagesForRolls(htmlDoc);
                     }
-                    Console.WriteLine(messagesFromBuffer.Count);
-                    messagesFromBuffer.Clear();
+                    messages.Clear();
+
+                    // If there is no message, we don't want to keep building up the text
+                    // and reading it all into memory. Stop parsing if no message is found
+                    // after 50 KB of text.
+                    if (bufferBuilder.Capacity > 1024 * 50) {
+                        return;
+                    }
                 }
             }
         }

@@ -9,17 +9,9 @@ namespace Roll20Aggregator.Components {
         [Inject] ParsingSession ParsingSession { get; set; }
 
         private readonly FileUploadModel fileUploadModel = new();
-        private bool isLoading;
 
         private async void UploadFileAndParse(InputFileChangeEventArgs e) {
-            isLoading = true;
-
-            await ParsingSession.GetChatLogFromFile(e.File);
-            Parser parser = new();
-            await parser.Parse(ParsingSession.ChatLog);
-
-            isLoading = false;
-
+            await ParsingSession.StartSession(e.File);
             NavigationManager.NavigateTo("/results");
         }
     }
