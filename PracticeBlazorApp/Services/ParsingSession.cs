@@ -14,13 +14,8 @@ namespace Roll20Aggregator.Services {
         public RollStats CurrentGlobalStats { get; set; } = new();
 
         public async Task GetChatLogFromFile(IBrowserFile file) {
-            string text;
-            using (StreamReader sr = new(file.OpenReadStream(1024 * 1024 * 20))) {
-                text = await sr.ReadToEndAsync();
-            }
-
             ChatLog = new ChatLog();
-            await ChatLog.LoadHtml(text);
+            ChatLog.ChatLogFile = file;
         }
 
         public async Task SetStatsDict() {
