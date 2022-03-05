@@ -1,19 +1,33 @@
-﻿<div class="container">
-    <div class="row align-items-end" style="height: 30vh">
-        <div class="col text-center">
-            <h1>Hello, world!</h1>
-        </div>
+﻿<div class="container h-100 d-flex flex-column justify-content-evenly align-items-center">
+    <div class="pt-6 text-center">
+        <h1 class="display-1">
+            <span class="text-primary"><i class="fa-solid fa-dice-d20"></i></span>
+            <span class=fw-bold>Roll</span><span class="fw-lighter">20</span> Aggregator
+        </h1>
     </div>
 
-    <div class="row align-items-center" style="height: 20vh">
-        <div class="col text-center">
-            <FileUpload />
-        </div>
+    <div class="py-3">
+        <FileUpload />
     </div>
 
-    <div class="row align-items-start" style="height: 50vh">
-        <div class="col text-center">
-            <p>Display some instructions here...</p>
-        </div>
+    <div class="alert alert-secondary pb-6 text-dark">
+        <h5 class="alert-heading">Instructions:</h5>
+
+        <p>
+            (Exact wording varies based on your browser.)
+        </p>
+
+        <ol>
+            <li>Login to your Roll20 account and open your game</li>
+            <li>Select 'Chat Archive' in the Content dropdown menu</li>
+            <li>Press the 'Show on One Page' button</li>
+            <li>Right click anywhere on the page, select 'Save Page As'</li>
+            <li>In the 'Save as type:' dropdown, select 'Web Page, complete'</li>
+            <li>Upload the page html file</li>
+        </ol>
+
+        <p>
+            Loading may take a while!
+        </p>
     </div>
 </div>

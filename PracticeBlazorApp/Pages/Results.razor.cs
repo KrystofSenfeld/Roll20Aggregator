@@ -1,12 +1,61 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Roll20Aggregator.Models;
 using Roll20Aggregator.Services;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Roll20Aggregator.Pages {
     [Route("/results")]
-    public partial class Results {
+    public partial class Results : ComponentBase {
         [Inject] ParsingSession ParsingSession { get; set; }
+        [Inject] NavigationManager NavigationManager { get; set; }
+
+        public enum RollDisplayType {
+            Count,
+            Percent
+        }
+
+        public RollDisplayType DisplayType { get; set; } = RollDisplayType.Count;
+        public ChiSquareTestResults TestResults => ParsingSession.CurrentGlobalStats.TestResults;
+        public string TestConclusion {
+            get {
+                if (TestResults == null) {
+                    return null;
+                }
+
+                if (TestResults.SampleSize < TestResults.MinimumRollsRequired) {
+                    return "Not enough rolls to test randomness.";
+                }
+
+                return TestResults.Significant
+                    ? "The rolls for this die deviate significantly from a random distribution. "
+                    : "The rolls for this die follow a random distribution. ";
+            }
+        }
+        public string TestResultColorClass {
+            get {
+                if (TestResults == null) {
+                    return null;
+                }
+
+                if (TestResults.SampleSize < TestResults.MinimumRollsRequired) {
+                    return "secondary";
+                }
+
+                return TestResults?.Significant ?? false ? "danger" : "success";
+            }
+        }
+
+        public void Refresh() => StateHasChanged();
+
+        public Task SwitchRollDisplayType(RollDisplayType type) {
+            if (type != DisplayType) {
+                DisplayType = type;
+            }
+
+            return Task.CompletedTask;
+        }
 
         public decimal GroupAverage() {
             decimal runningTotalSum = 0;
@@ -15,41 +64,25 @@ namespace Roll20Aggregator.Pages {
                 runningTotalSum += kvp.Value.AverageRoll * kvp.Value.TotalRollsCount;
                 runningTotalCount += kvp.Value.TotalRollsCount;
             }
-            return runningTotalCount == 0 ? 0m : runningTotalSum / runningTotalCount;
+            return runningTotalCount == 0 ? 0m : Math.Round(runningTotalSum / runningTotalCount, 2);
         }
 
-        async void DieSelected(ChangeEventArgs e) {
-            string newDie = e.Value.ToString();
+        public decimal GroupPercent(string key) {
+            decimal total = ParsingSession.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum();
+            decimal dividend = ParsingSession.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum();
 
-            if (string.IsNullOrEmpty(newDie)) {
-                return;
+            return dividend == 0m ? 0m :
+                Math.Round(total / dividend * 100m, 2);
+        }
+
+        protected override bool ShouldRender() {
+            return ParsingSession.IsInitialized;
+        }
+
+        protected override void OnInitialized() {
+            if (!ParsingSession.IsInitialized) {
+                NavigationManager.NavigateTo("/");
             }
-
-            ParsingSession.CurrentDieType = newDie;
-            RollStats.SetRollKeys(newDie);
-            await ParsingSession.SetStatsDict();
-        }
-
-        async void CharacterSelected(ChangeEventArgs e) {
-            string newCharacter = e.Value.ToString();
-
-            if (string.IsNullOrEmpty(newCharacter)) {
-                return;
-            }
-
-            if (!ParsingSession.CurrentCharacters.Contains(newCharacter)) {
-                await AddCharacter(newCharacter);
-            }
-        }
-
-        async Task AddCharacter(string character) {
-            ParsingSession.CurrentCharacters.Add(character);
-            await ParsingSession.AddToStatsDict(character);
-        }
-
-        async Task RemoveCharacter(string character) {
-            ParsingSession.CurrentCharacters.Remove(character);
-            await ParsingSession.RemoveFromStatsDict(character);
         }
     }
 }

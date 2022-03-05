@@ -1,99 +1,110 @@
-﻿@using Roll20Aggregator.Models
+﻿<div class="row h-100">
+    <div class="col-2 bg-light">
+        @if (ParsingSession.IsInitialized) {
+            <ResultsFilterOptions Parent="this" />
+        }
+    </div>
 
-<div class="container">
-    <div class="row">
-        <div class="col-3">
-            <form>
-                <h3>Select Die</h3>
-                <div>
-                    <select @onchange="DieSelected">
-                        <option value=""></option>
-                        @foreach (var dieType in ParsingSession.ChatLog.AllDieTypes) {
-                            <option value="@dieType">@dieType</option>
+    <div class="col">
+        <div class="d-flex flex-row justify-content-between align-items-center py-3 px-2">
+            <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" checked
+                    @onclick="async() => await SwitchRollDisplayType(RollDisplayType.Count)">
+                <label class="btn btn-outline-primary" for="btnradio1">Number</label>
+
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off"
+                    @onclick="async() => await SwitchRollDisplayType(RollDisplayType.Percent)">
+                <label class="btn btn-outline-primary" for="btnradio2">Percent</label>
+            </div>
+
+            <div>
+                @if (TestResults != null) {
+                    <div class="alert alert-@TestResultColorClass h-100 align-items-center" role="alert">
+                        @(TestConclusion)
+                        @if (TestResults.SampleSize > TestResults.MinimumRollsRequired) {
+                            <text>&chi;&sup2 (@TestResults.DegreesOfFreedom, <em>N</em> = @TestResults.SampleSize) = @TestResults.Statistic, <em>p = @TestResults.PValue</em>.</text>
                         }
-                    </select>
-                </div>
-
-                <h3>Select Characters</h3>
-                <div>
-                    <select @onchange="CharacterSelected">
-                        <option value=""></option>
-                        @foreach (var character in ParsingSession.ChatLog.AllCharacters) {
-                            <option value="@character">@character</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="toppings">
-                    @foreach (var character in ParsingSession.CurrentCharacters) {
-                        <div class="topping">
-                            @character
-                            <button type="button" class="delete-topping" @onclick="@(() => RemoveCharacter(character))">x</button>
-                        </div>
-                    }
-                </div>
-            </form>
+                    </div>
+                }
+            </div>
         </div>
 
-        <div class="col">
-            <h3>Results</h3>
-
-            <table>
-                <tr>
-                    <th scope="col">Character</th>
-                    <th scope="col">Total Rolls</th>
-                    <th scope="col">Average Roll</th>
-                    <th scope="col" colspan="@RollStats.RollCategories.Length" class="tableSwitchHeader">Rolls by Count</th>
-                </tr>
-
-                <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    @foreach (var key in RollStats.RollCategories) {
-                        <th>@key</th>
-                    }
-                </tr>
-
-                <tr>
-                    <td>Global Total</td>
-                    <td>@ParsingSession.CurrentGlobalStats.TotalRollsCount</td>
-                    <td>@ParsingSession.CurrentGlobalStats.AverageRoll</td>
-
-                    @foreach (var key in RollStats.RollCategories) {
-                        <td>@ParsingSession.CurrentGlobalStats.RollsCount[key]</td>
-                    }
-                </tr>
-
-                <tr>
-                    <td>Group Total</td>
-                    <td>@ParsingSession.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
-                    <td>@GroupAverage()</td>
-
-                    @foreach (var key in RollStats.RollCategories) {
-                        <td>@ParsingSession.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum()</td>
-                    }
-                </tr>
-
-                @foreach (var kvp in ParsingSession.CurrentStats) {
+        <div class="py-3 px-2">
+            <table class="table table-hover">
+                <thead>
                     <tr>
-                        <td>@kvp.Key</td>
-                        <td>@kvp.Value.TotalRollsCount</td>
-                        <td>@kvp.Value.AverageRoll</td>
-
-                        @foreach (var kvp2 in kvp.Value.RollsCount) {
-                            <td>@kvp2.Value</td>
-                        }
-
+                        <th scope="col">Character</th>
+                        <th scope="col">Total Rolls</th>
+                        <th scope="col">Average Roll</th>
+                        <th scope="col" colspan="@RollStats.RollCategories.Length" class="tableSwitchHeader">
+                            Rolls (by @DisplayType)
+                        </th>
                     </tr>
-                }
+
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        @foreach (var key in RollStats.RollCategories) {
+                            <th>@key</th>
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr class="table-light">
+                        <td>Total (Global)</td>
+                        <td>@ParsingSession.CurrentGlobalStats.TotalRollsCount</td>
+                        <td>@ParsingSession.CurrentGlobalStats.AverageRoll</td>
+
+                        @foreach (var key in RollStats.RollCategories) {
+                            <td>
+                                @if (DisplayType == RollDisplayType.Count) {
+                                    @ParsingSession.CurrentGlobalStats.RollsCount[key]
+                                }
+                                else if (DisplayType == RollDisplayType.Percent) {
+                                    @($"{ParsingSession.CurrentGlobalStats.RollsPercent[key]}%")
+                                }
+                            </td>
+                        }
+                    </tr>
+
+                    <tr class="table-light">
+                        <td>Total (Selected)</td>
+                        <td>@ParsingSession.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
+                        <td>@GroupAverage()</td>
+
+                        @foreach (var key in RollStats.RollCategories) {
+                            <td>
+                                @if (DisplayType == RollDisplayType.Count) {
+                                    @ParsingSession.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum()
+                                }
+                                else if (DisplayType == RollDisplayType.Percent) {
+                                    @($"{GroupPercent(key)}%")
+                                }
+                            </td>
+                        }
+                    </tr>
+
+                    @foreach (var kvp in ParsingSession.CurrentStats) {
+                        <tr>
+                            <td>@kvp.Key</td>
+                            <td>@kvp.Value.TotalRollsCount</td>
+                            <td>@kvp.Value.AverageRoll</td>
+
+                            @if (DisplayType == RollDisplayType.Count) {
+                                @foreach (var kvp2 in kvp.Value.RollsCount) {
+                                    <td>@kvp2.Value</td>
+                                }
+                            } else if (DisplayType == RollDisplayType.Percent) {
+                                @foreach (var kvp2 in kvp.Value.RollsPercent) {
+                                    <td>@($"{kvp2.Value}%")</td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
             </table>
         </div>
     </div>
-
-    @foreach (Roll roll in ParsingSession.ChatLog.AllRolls) {
-        <p>
-            @($"{roll.RolledBy} rolled a {roll.DieType}: {roll.Value}")
-        </p>
-    }
 </div>

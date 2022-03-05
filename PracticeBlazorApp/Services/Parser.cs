@@ -41,6 +41,7 @@ namespace Roll20Aggregator.Services {
 
             chatLog.AllDieTypes = RollKeys.Keys.Keys.ToList()
                 .Where(d => allDieTypes.Contains(d))
+                .Reverse()
                 .ToList();
 
             await Task.CompletedTask;
