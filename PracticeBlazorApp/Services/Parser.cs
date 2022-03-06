@@ -2,12 +2,13 @@
 using Roll20Aggregator.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+
+// Why aren't Helpless Child (Jun) and others showing up?
 
 namespace Roll20Aggregator.Services {
     public class Parser {
@@ -16,22 +17,22 @@ namespace Roll20Aggregator.Services {
         private HashSet<string> allCharacters = new();
         private HashSet<string> allDieTypes = new();
 
+        private int rollIndex = 0;
         private List<Roll> allRolls = new();
         private HashSet<int> emoteIndices = new();
-        private Dictionary<string, List<string>> AvatarToCharacter = new();
+        private Dictionary<string, HashSet<string>> AvatarToCharacter = new();
 
-        private string currentCharacter = string.Empty;
-        private Regex authorQuery = new Regex(@"\S*");
-        private Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
-        private Regex rollValueQuery = new Regex(">([0-9]+)</");
+        private string currentCharacter = null;
+        private string currentAvatar = null;
+
+        private readonly Regex authorQuery = new Regex(@"\w+\s");
+        private readonly Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
+        private readonly Regex rollValueQuery = new Regex(">([0-9]+)</");
 
         public async Task Parse(ChatLog chatLog) {
             this.chatLog = chatLog;
             await BufferedReadAndParse();
-
-            Console.WriteLine($"{emoteIndices.Count} emote rolls have been recorded:\n{string.Join(" ", emoteIndices)}.");
-
-            Console.WriteLine(TryResolveEmoteEntries());
+            TryResolveEmoteEntries();
 
             chatLog.AllRolls = allRolls.ToList();
 
@@ -39,17 +40,16 @@ namespace Roll20Aggregator.Services {
                 .OrderBy(c => c)
                 .ToList();
 
+            // Have the list of dice start with the largest first; eg d100
             chatLog.AllDieTypes = RollKeys.Keys.Keys.ToList()
                 .Where(d => allDieTypes.Contains(d))
                 .Reverse()
                 .ToList();
-
-            await Task.CompletedTask;
         }
 
         private async Task BufferedReadAndParse() {
             using (StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize))) {
-                int bufferSize = 1024 * 10; // 10 KB
+                int bufferSize = 1024 * 1024; // 1 MB
                 char[] buffer = new char[bufferSize];
 
                 StringBuilder bufferBuilder = new();
@@ -102,7 +102,7 @@ namespace Roll20Aggregator.Services {
              HtmlNode messageNode = htmlDoc.DocumentNode.SelectSingleNode("//div[contains(@class, \"message\")]");
 
             if (messageNode == null) {
-                Console.WriteLine("Parser was expecting messages but got none. Sorry!");
+                Console.WriteLine("Parser was expecting messages but got none.");
                 return;
             }
 
@@ -114,16 +114,22 @@ namespace Roll20Aggregator.Services {
                     continue;
                 }
 
-                if (!classes.Contains("emote")) {
-                    currentCharacter = GetAndLogCharacter(messageNode);
-                }
+                GetAndLogCharacter(messageNode, classes);
 
                 if (classes.Contains("rollresult")) {
-                    ParseForRollBlock(messageNode);
+                    try {
+                        ParseForRollBlock(messageNode);
+                    } catch (Exception) {
+                        Console.WriteLine($"There was a problem parsing for roll block in the message:\n{messageNode.InnerHtml}");
+                    }
                 }
 
-                // This is done for all messages since roll blocks can, rarely, contain inline rolls.
-                ParseForInlineRolls(messageNode, classes);
+                // Inline roll parsing is done for all messages since roll blocks can, rarely, contain inline rolls.
+                try {
+                    ParseForInlineRolls(messageNode, classes);
+                } catch (Exception) {
+                    Console.WriteLine($"There was a problem parsing for inline rolls in the message:\n{messageNode.InnerHtml}");
+                }
 
                 messageNode = messageNode.NextSibling;
             }
@@ -160,34 +166,46 @@ namespace Roll20Aggregator.Services {
                 List<Match> rollValues = rollValueQuery.Matches(rollNodeAttr).ToList();
 
                 if (classes.Contains("emote")) {
-                    rollValues.ForEach(r => {
-                        emoteIndices.Add(allRolls.Count); // Mark the next roll to be added as from an emote message
-                        RegisterRoll(messageNode.InnerText, int.Parse(r.Groups[1].Value), dieType, true);
-                    });
+                    // Emote message author is temporarily set to the emote message itself, which will later be
+                    // resolved based on confirmed characters and avatars.
+                    rollValues.ForEach(r => RegisterRoll(messageNode.InnerText, int.Parse(r.Groups[1].Value), dieType, true));
                 } else {
                     rollValues.ForEach(r => RegisterRoll(currentCharacter, int.Parse(r.Groups[1].Value), dieType, false));
                 }
             }
         }
 
-        private string GetAndLogCharacter(HtmlNode messageNode) {
+        private void GetAndLogCharacter(HtmlNode messageNode, HashSet<string> classes) {
+            if (classes.Contains("emote")) {
+                GetAvatar(messageNode);
+                return;
+            }
+
             HtmlNode authorNode = messageNode.SelectSingleNode(".//span[contains(@class, \"by\")]");
-            string character = authorNode?.InnerText[0..^1] ?? currentCharacter;
 
+            if (authorNode != null) {
+                currentCharacter = authorNode.InnerText[0..^1];
+                GetAvatar(messageNode);
+                LinkAvatarToCharacter(currentAvatar, currentCharacter);
+            }
+        }
+
+        private void GetAvatar(HtmlNode messageNode) {
             HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]")?.FirstChild;
-            string avatar = avatarNode?.GetAttributeValue("img", null);
-
-            LinkAvatarToCharacter(avatar, character);
-            return character;
+            currentAvatar = avatarNode?.GetAttributeValue("src", null) ?? "blankAvatar";
         }
 
         private void RegisterRoll(string author, int rollValue, string dieType, bool isEmote) {
-            allRolls.Add(new Roll(author, rollValue, dieType));
+            allRolls.Add(new Roll(rollIndex, author, currentAvatar, rollValue, dieType));
             allDieTypes.Add(dieType);
-
-            if (!isEmote) {
+            
+            if (isEmote) {
+                emoteIndices.Add(rollIndex);
+            } else {
                 allCharacters.Add(author);
             }
+
+            rollIndex++;
         }
 
         private void LinkAvatarToCharacter(string avatar, string character) {
@@ -200,44 +218,52 @@ namespace Roll20Aggregator.Services {
             }
         }
 
-        private int TryResolveEmoteEntries() {
+        private void TryResolveEmoteEntries() {
+            Console.WriteLine($"Attempting to resolve {emoteIndices.Count} emote rolls...");
             int unresolvedEntries = 0;
 
             foreach (int index in emoteIndices) {
+                Roll roll = allRolls.Where(r => r.Id == index).SingleOrDefault();
+
                 // Check the AvatarToCharacter dictionary for this avatar. Having no avatar counts as having a blank avatar.
-                bool foundAvatar = AvatarToCharacter.TryGetValue(allRolls[index].RolledBy, out List<string> characterList);
+                bool foundAvatar = AvatarToCharacter.TryGetValue(roll?.Avatar, out HashSet<string> characterSet);
 
                 if (foundAvatar) {
-                    // If there is only one author for this avatar, use that author. This is the simplest case.
-                    if (characterList.Count == 1) {
-                        Debug.WriteLine($"Changing {allRolls[index].RolledBy} to {characterList.First()}");
-                        allRolls[index].RolledBy = characterList.First();
+                    // If there is only one character for this avatar, use that character. This is the ideal case.
+                    if (characterSet.Count == 1) {
+#if DEBUG
+                        Console.WriteLine($"Identified '{roll.RolledBy}' as '{characterSet.First()}' by unique avatar.");
+#endif
+                        roll.RolledBy = characterSet.First();
                         continue;
                     }
 
-                    // If there is more than one author, it means multiple characters used the same avatar, or a single character
-                    // used the avatar and changed their name. Search for the longest possible author match inside the emote message
-                    // from the dictionary entry for this avatar.
-                    string characterResult = SearchForLongestMatch(allRolls[index].RolledBy, characterList);
-                    Debug.WriteLine($"Changing {allRolls[index].RolledBy} to {characterResult}");
-                    allRolls[index].RolledBy = characterResult;
+                    // If there is more than one character, it means multiple characters used the same avatar. Search the emote message
+                    // for the longest possible character from those associated with this avatar. This includes characters that don't have avatars.
+                    string characterResult = SearchForLongestMatch(roll.RolledBy, characterSet);
+#if DEBUG
+                    Console.WriteLine($"Identified '{roll.RolledBy}' as '{characterResult}'.");
+#endif
+                    roll.RolledBy = characterResult;
                 } else {
-                    // If there is no avatar, it means that this character has only typed emote messages, and it is programmatically
+                    // If an avatar wasn't found, it means that this character has only typed emote messages, and it is programmatically
                     // impossible to determine what their name is. Default to the first word of the emote message.
-                    // Return the number of these cases.
-                    string newCharacter = authorQuery.Match(allRolls[index].RolledBy).Value;
-                    allCharacters.Add(newCharacter);
+                    string newCharacter = authorQuery.Match(roll.RolledBy).Value.TrimEnd();
+#if DEBUG
+                    Console.WriteLine($"Could not identify '{roll.RolledBy}'; using '{newCharacter}'");
+#endif
 
-                    Debug.WriteLine($"Changing {allRolls[index].RolledBy} to {newCharacter}");
-                    allRolls[index].RolledBy = newCharacter;
+                    allCharacters.Add(newCharacter);
+                    roll.RolledBy = newCharacter;
                     unresolvedEntries++;
                 }
             }
 
-            return unresolvedEntries;
+            Console.WriteLine($"{unresolvedEntries} emote rolls could not be linked to existing characters.");
         }
 
         private string SearchForLongestMatch(string searchText, IEnumerable<string> searchTerms) {
+            searchTerms = searchTerms.OrderByDescending(t => t.Length);
             foreach (string searchTerm in searchTerms) {
                 if (searchText[..searchTerm.Length] == searchTerm) {
                     return searchTerm;
