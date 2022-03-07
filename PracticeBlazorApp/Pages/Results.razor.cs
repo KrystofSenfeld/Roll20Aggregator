@@ -81,6 +81,7 @@ namespace Roll20Aggregator.Pages {
 
         protected override void OnInitialized() {
             if (!ParsingSession.IsInitialized) {
+                Console.WriteLine("No file was uploaded; redirecting to home screen.");
                 NavigationManager.NavigateTo("/");
             }
         }

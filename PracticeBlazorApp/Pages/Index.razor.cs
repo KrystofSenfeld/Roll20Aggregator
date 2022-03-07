@@ -8,7 +8,6 @@ namespace Roll20Aggregator.Pages {
 
         protected override void OnInitialized() {
             ParsingSession.IsInitialized = false;
-            System.Console.WriteLine("Initializing home page");
         }
     }
 }

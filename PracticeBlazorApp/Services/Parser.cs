@@ -8,7 +8,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-// Why aren't Helpless Child (Jun) and others showing up?
+// TODO:
+// - Remove Id from rolls and use allRolls.Count again for index?
 
 namespace Roll20Aggregator.Services {
     public class Parser {
@@ -25,7 +26,7 @@ namespace Roll20Aggregator.Services {
         private string currentCharacter = null;
         private string currentAvatar = null;
 
-        private readonly Regex authorQuery = new Regex(@"\w+\s");
+        private readonly Regex authorQuery = new Regex(@"(\w)+");
         private readonly Regex dieTypeQuery = new Regex("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
         private readonly Regex rollValueQuery = new Regex(">([0-9]+)</");
 
@@ -49,7 +50,7 @@ namespace Roll20Aggregator.Services {
 
         private async Task BufferedReadAndParse() {
             using (StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize))) {
-                int bufferSize = 1024 * 1024; // 1 MB
+                int bufferSize = 1024 * 5; // 10 KB
                 char[] buffer = new char[bufferSize];
 
                 StringBuilder bufferBuilder = new();
@@ -92,6 +93,7 @@ namespace Roll20Aggregator.Services {
                     // and reading it all into memory. Stop parsing if no message is found
                     // after 50 KB of text.
                     if (bufferBuilder.Capacity > 1024 * 50) {
+                        Console.WriteLine("Parser didn't find a valid message for 50 KB, so it stopped parsing.");
                         return;
                     }
                 }
@@ -109,7 +111,7 @@ namespace Roll20Aggregator.Services {
             while (messageNode != null) {
                 HashSet<string> classes = messageNode.GetClasses().ToHashSet();
 
-                if (classes.Contains("desc")) {
+                if (classes.Contains("desc") || classes.Contains("private") || classes.Contains("whisper")) {
                     messageNode = messageNode.NextSibling;
                     continue;
                 }
@@ -185,6 +187,7 @@ namespace Roll20Aggregator.Services {
 
             if (authorNode != null) {
                 currentCharacter = authorNode.InnerText[0..^1];
+                allCharacters.Add(currentCharacter);
                 GetAvatar(messageNode);
                 LinkAvatarToCharacter(currentAvatar, currentCharacter);
             }
@@ -201,8 +204,6 @@ namespace Roll20Aggregator.Services {
             
             if (isEmote) {
                 emoteIndices.Add(rollIndex);
-            } else {
-                allCharacters.Add(author);
             }
 
             rollIndex++;
@@ -241,25 +242,35 @@ namespace Roll20Aggregator.Services {
                     // If there is more than one character, it means multiple characters used the same avatar. Search the emote message
                     // for the longest possible character from those associated with this avatar. This includes characters that don't have avatars.
                     string characterResult = SearchForLongestMatch(roll.RolledBy, characterSet);
+
+                    if (characterResult != null) {
 #if DEBUG
-                    Console.WriteLine($"Identified '{roll.RolledBy}' as '{characterResult}'.");
+                        Console.WriteLine($"Identified '{roll.RolledBy}' as '{characterResult}'.");
 #endif
-                    roll.RolledBy = characterResult;
-                } else {
-                    // If an avatar wasn't found, it means that this character has only typed emote messages, and it is programmatically
-                    // impossible to determine what their name is. Default to the first word of the emote message.
-                    string newCharacter = authorQuery.Match(roll.RolledBy).Value.TrimEnd();
+                        roll.RolledBy = characterResult;
+                        continue;
+                    }
+                }
+
+                // If an avatar wasn't found, it means that this character has only typed emote messages, and it is programmatically
+                // impossible to determine what their name is. Default to the first word of the emote message.
+                string newCharacter = authorQuery.Match(roll.RolledBy).Value.TrimEnd();
 #if DEBUG
-                    Console.WriteLine($"Could not identify '{roll.RolledBy}'; using '{newCharacter}'");
+                Console.WriteLine($"Could not identify '{roll.RolledBy}'; using '{newCharacter}'");
 #endif
 
-                    allCharacters.Add(newCharacter);
-                    roll.RolledBy = newCharacter;
-                    unresolvedEntries++;
-                }
+                allCharacters.Add(newCharacter);
+                roll.RolledBy = newCharacter;
+                unresolvedEntries++;
             }
 
             Console.WriteLine($"{unresolvedEntries} emote rolls could not be linked to existing characters.");
+
+            foreach(var kvp in AvatarToCharacter) {
+                Console.WriteLine(string.Join(", ", kvp.Value));
+            }
+
+            // Console.WriteLine(string.Join(", ", allCharacters));
         }
 
         private string SearchForLongestMatch(string searchText, IEnumerable<string> searchTerms) {
