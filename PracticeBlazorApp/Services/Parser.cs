@@ -50,7 +50,7 @@ namespace Roll20Aggregator.Services {
 
         private async Task BufferedReadAndParse() {
             using (StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize))) {
-                int bufferSize = 1024 * 5; // 10 KB
+                int bufferSize = 1024 * 10; // 10 KB
                 char[] buffer = new char[bufferSize];
 
                 StringBuilder bufferBuilder = new();
@@ -78,8 +78,9 @@ namespace Roll20Aggregator.Services {
 
                     // Check if we've reached the end of the document, and assume
                     // what's left is a message.
-                    if (adjustedBufferString.Contains(endTag)) {
+                    if (foundFirst && adjustedBufferString.Contains(endTag)) {
                         messages.Add(messageTag + adjustedBufferString + "></script>");
+                        Console.WriteLine("Reached the end of file...");
                     }
 
                     foreach (string message in messages) {
@@ -254,7 +255,7 @@ namespace Roll20Aggregator.Services {
 
                 // If an avatar wasn't found, it means that this character has only typed emote messages, and it is programmatically
                 // impossible to determine what their name is. Default to the first word of the emote message.
-                string newCharacter = authorQuery.Match(roll.RolledBy).Value.TrimEnd();
+                string newCharacter = authorQuery.Match(roll.RolledBy.Trim()).Value;
 #if DEBUG
                 Console.WriteLine($"Could not identify '{roll.RolledBy}'; using '{newCharacter}'");
 #endif

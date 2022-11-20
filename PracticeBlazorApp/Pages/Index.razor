@@ -21,13 +21,17 @@
             <li>Login to your Roll20 account and open your game</li>
             <li>Select 'Chat Archive' in the Content dropdown menu</li>
             <li>Press the 'Show on One Page' button</li>
-            <li>Right click anywhere on the page, select 'Save Page As'</li>
-            <li>In the 'Save as type:' dropdown, select 'Web Page, complete'</li>
-            <li>Upload the page html file</li>
+            <li>Press F12 to open your browser's developer tools. Find the inspector tab, which should show you a list of HTML elements.</li>
+            <li>Find the line following line (it should be about the 10th): <code>&lt;div id=&quot;textchat class=&quot;textchatcontainer&quot;&gt;...&lt;/div&gt;</code></li>
+            <li>Right click this line and select Copy > Inner HTML. Save the contents to a text file - this is the file to upload.</li>
         </ol>
 
         <p>
-            Loading may take a while!
+            If you run into problems, you may have to clear your cache - try a hard refresh with Ctrl + F5 or Ctrl + Shift + R.
+        </p>
+
+        <p>
+            These files are large - loading may take a while!
         </p>
 
         <p>
