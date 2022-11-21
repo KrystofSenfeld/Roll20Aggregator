@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace Roll20Aggregator.Models {
-    public class RollKeys {
+    public static class RollKeys {
         public static Dictionary<string, string[]> Keys = new() {
             { "d4", new[] { "1", "2", "3", "4" } },
             { "d6", new[] { "1", "2", "3", "4", "5", "6" } },

@@ -15,13 +15,13 @@ namespace Roll20Aggregator.Models {
         public ChiSquareTestResults TestResults { get; set; }
 
         public RollStats() {}
-        public RollStats(string dieType, List<Roll> rolls) {
+        public RollStats(string dieType, List<RollDto> rolls) {
             RollCategories = RollKeys.GetRollKeys(dieType);
             ParseRolls(dieType, rolls);
             CalculateSignificance(dieType);
         }
 
-        public RollStats(string dieType, string character, List<Roll> rolls) {
+        public RollStats(string dieType, string character, List<RollDto> rolls) {
             RollCategories = RollKeys.GetRollKeys(dieType);
             ParseRolls(dieType, character, rolls);
         }
@@ -30,13 +30,13 @@ namespace Roll20Aggregator.Models {
             RollCategories = RollKeys.GetRollKeys(dieType);
         }
 
-        private void ParseRolls(string dieType, List<Roll> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
-        private void ParseRolls(string dieType, string character, List<Roll> rolls) => ParseRolls(dieType, character, rolls, true);
-        private void ParseRolls(string dieType, string character, List<Roll> rolls, bool shouldFilter) {
+        private void ParseRolls(string dieType, List<RollDto> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
+        private void ParseRolls(string dieType, string character, List<RollDto> rolls) => ParseRolls(dieType, character, rolls, true);
+        private void ParseRolls(string dieType, string character, List<RollDto> rolls, bool shouldFilter) {
             int runningTotal = 0;
             RollsCount = RollCategories.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
 
-            foreach (Roll roll in rolls) {
+            foreach (RollDto roll in rolls) {
                 if (shouldFilter && roll.RolledBy != character) {
                     continue;
                 }
