@@ -54,7 +54,7 @@ namespace Roll20Aggregator.Services {
             using StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize));
 
             // Chat logs can be massive, so we don't want to read everything into memory at once.
-            int bufferSize = 1024 * 10; // 10 KB
+            int bufferSize = 1024 * 1024 * 1; // 1 MB
             char[] bufferArray = new char[bufferSize];
 
             StringBuilder bufferText = new();
