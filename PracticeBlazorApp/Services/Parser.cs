@@ -34,9 +34,13 @@ namespace Roll20Aggregator.Services {
         public async Task Parse(ChatLog chatLog) {
             this.chatLog = chatLog;
 
-            await BufferedReadAndParse();
+            await ReadAndParse();
+
+            // await BufferedReadAndParse();
 
             TryResolveEmoteEntries();
+
+            Console.WriteLine(string.Join(", ", rolls.Where(r => r.DieType == "d100" && r.RolledBy == "Torian York").Select(r => r.Value.ToString())));
 
             chatLog.AllRolls = rolls.ToList();
 
@@ -50,11 +54,20 @@ namespace Roll20Aggregator.Services {
                 .ToList();
         }
 
+        private async Task ReadAndParse() {
+            using StreamReader stream = new (chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize));
+
+            HtmlDocument htmlDoc = new();
+            htmlDoc.LoadHtml(await stream.ReadToEndAsync());
+
+            ParseMessagesForRolls(htmlDoc);
+        }
+
         private async Task BufferedReadAndParse() {
             using StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize));
 
             // Chat logs can be massive, so we don't want to read everything into memory at once.
-            int bufferSize = 1024 * 1024 * 1; // 1 MB
+            int bufferSize = 1024 * 100; // 100 KB
             char[] bufferArray = new char[bufferSize];
 
             StringBuilder bufferText = new();
@@ -73,9 +86,9 @@ namespace Roll20Aggregator.Services {
                 // Search buffer for occurrences of message opening tags and add messages to list.
                 while ((messageTagIndex = bufferTextString.IndexOf(messageTag)) >= 0) {
 
-                    // The first time we find a message tag, we don't know where the message ends.
-                    // Thus it's only once we get the second message tag that we can start adding
-                    // text to the message list.
+                    // The very first time we find a message tag, we don't know where the message ends.
+                    // Thus it's only once we get the second message tag that we can start adding text
+                    // to the message list.
                     if (foundMessageTag) {
                         messages.Add(messageTag + bufferTextString[..messageTagIndex]);
                     } else {
@@ -104,8 +117,8 @@ namespace Roll20Aggregator.Services {
                 messages.Clear();
 
                 // If we keep not finding a message, we don't want to keep building up the buffer.
-                // Stop parsing if no message is found after 50 KB of text.
-                if (bufferText.Capacity > 1024 * 50) {
+                // Stop parsing if no message is found after 100 KB of text.
+                if (bufferText.Capacity > 1024 * 100) {
                     Console.WriteLine("Parser didn't find a valid message for 50 KB, so it stopped parsing.");
                     return;
                 }
@@ -134,11 +147,11 @@ namespace Roll20Aggregator.Services {
 
                     // Only messages with the rollresult class contain roll blocks.
                     if (classes.Contains("rollresult")) {
-                        ParseForRollBlock(messageNode);
+                        ParseRollBlock(messageNode);
                     }
 
                     // Inline roll parsing must be done for all messages since roll blocks can, rarely, contain inline rolls.
-                    ParseForInlineRolls(messageNode, classes);
+                    ParseInlineRolls(messageNode, classes);
 
                     messageNode = messageNode.NextSibling;
                 } catch (Exception ex) {
@@ -147,7 +160,7 @@ namespace Roll20Aggregator.Services {
             }
         }
 
-        private void ParseForRollBlock(HtmlNode messageNode) {
+        private void ParseRollBlock(HtmlNode messageNode) {
             HtmlNode rollResultNode = messageNode.SelectSingleNode(".//div[contains(@class, \"diceroll\")]");
 
             if (rollResultNode == null) {
@@ -160,7 +173,7 @@ namespace Roll20Aggregator.Services {
             rollNodes.ForEach(r => RegisterRoll(currentCharacter, int.Parse(r.InnerText), dieType, false));
         }
 
-        private void ParseForInlineRolls(HtmlNode messageNode, IEnumerable<string> classes) {
+        private void ParseInlineRolls(HtmlNode messageNode, IEnumerable<string> classes) {
             var rollNodes = messageNode.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
 
             if (rollNodes == null) {
@@ -288,7 +301,10 @@ namespace Roll20Aggregator.Services {
         }
 
         private static string SearchForLongestMatch(string searchText, IEnumerable<string> searchTerms) {
-            searchTerms = searchTerms.OrderByDescending(t => t.Length);
+            searchTerms = searchTerms
+                .Where(t => t.Length <= searchText.Length)
+                .OrderByDescending(t => t.Length);
+
             foreach (string searchTerm in searchTerms) {
                 if (searchText[..searchTerm.Length] == searchTerm) {
                     return searchTerm;
