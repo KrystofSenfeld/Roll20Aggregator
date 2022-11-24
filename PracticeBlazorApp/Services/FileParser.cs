@@ -47,7 +47,7 @@ namespace Roll20Aggregator.Services {
                 AllCharacters = characterNames
                     .OrderBy(name => name)
                     .ToList(),
-                AllDieTypes = RollKeys.Keys.Keys
+                AllDieTypes = DiceResultGroups.ResultGroupsByDieType.Keys
                     .Where(dieType => dieTypes.Contains(dieType))
                     .Reverse()
                     .ToList(),

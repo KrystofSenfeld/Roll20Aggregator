@@ -16,18 +16,18 @@ namespace Roll20Aggregator.Models {
 
         public RollStats() {}
         public RollStats(string dieType, List<RollDto> rolls) {
-            RollCategories = RollKeys.GetRollKeys(dieType);
+            RollCategories = DiceResultGroups.GetResultGroups(dieType);
             ParseRolls(dieType, rolls);
             CalculateSignificance(dieType);
         }
 
         public RollStats(string dieType, string character, List<RollDto> rolls) {
-            RollCategories = RollKeys.GetRollKeys(dieType);
+            RollCategories = DiceResultGroups.GetResultGroups(dieType);
             ParseRolls(dieType, character, rolls);
         }
 
         public static void SetRollKeys(string dieType) {
-            RollCategories = RollKeys.GetRollKeys(dieType);
+            RollCategories = DiceResultGroups.GetResultGroups(dieType);
         }
 
         private void ParseRolls(string dieType, List<RollDto> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
