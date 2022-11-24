@@ -1,40 +1,41 @@
 ﻿using Accord.Statistics.Testing;
+using Roll20Aggregator.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Roll20Aggregator.Models {
+namespace Roll20Aggregator.Models
+{
     public class RollStats {
-        private List<double> observedRollValues = new();
+        private List<double> observedRollValues = new(); // used for statistical analysis
 
         public int TotalRollsCount { get; private set; } = 0;
         public decimal AverageRoll { get; private set; } = 0;
-        public static string[] RollCategories { get; private set; } = Array.Empty<string>();
+        public static string[] ResultGroups { get; private set; } = Array.Empty<string>();
         public Dictionary<string, int> RollsCount { get; private set; } = new();
         public Dictionary<string, decimal> RollsPercent { get; private set; } = new();
         public ChiSquareTestResults TestResults { get; set; }
 
         public RollStats() {}
         public RollStats(string dieType, List<RollDto> rolls) {
-            RollCategories = DiceResultGroups.GetResultGroups(dieType);
+            ResultGroups = DiceUtility.GetResultGroups(dieType);
             ParseRolls(dieType, rolls);
             CalculateSignificance(dieType);
         }
 
         public RollStats(string dieType, string character, List<RollDto> rolls) {
-            RollCategories = DiceResultGroups.GetResultGroups(dieType);
+            ResultGroups = DiceUtility.GetResultGroups(dieType);
             ParseRolls(dieType, character, rolls);
         }
 
-        public static void SetRollKeys(string dieType) {
-            RollCategories = DiceResultGroups.GetResultGroups(dieType);
-        }
-
         private void ParseRolls(string dieType, List<RollDto> rolls) => ParseRolls(dieType, string.Empty, rolls, false);
-        private void ParseRolls(string dieType, string character, List<RollDto> rolls) => ParseRolls(dieType, character, rolls, true);
+
+        private void ParseRolls(string dieType, string character, List<RollDto> rolls) =>
+            ParseRolls(dieType, character, rolls, true);
+
         private void ParseRolls(string dieType, string character, List<RollDto> rolls, bool shouldFilter) {
             int runningTotal = 0;
-            RollsCount = RollCategories.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
+            RollsCount = ResultGroups.ToDictionary(keySelector: k => k, elementSelector: _ => 0);
 
             foreach (RollDto roll in rolls) {
                 if (shouldFilter && roll.RolledBy != character) {
@@ -49,58 +50,40 @@ namespace Roll20Aggregator.Models {
                 TotalRollsCount++;
                 runningTotal += roll.Value;
 
-                GetRollKeys(roll.Value).ForEach(k => RollsCount[k]++);
+                DiceUtility.GetResultGroupsByRoll(roll.Value, ResultGroups)
+                    .ForEach(k => RollsCount[k]++);
             }
 
             AverageRoll = TotalRollsCount == 0 ? 0m : Math.Round(runningTotal / (decimal)TotalRollsCount, 2);
-            RollsPercent = RollCategories.ToDictionary(
+            RollsPercent = ResultGroups.ToDictionary(
                 keySelector: k => k,
-                elementSelector: k => TotalRollsCount == 0 ? 0m : Math.Round(RollsCount[k] / (decimal)TotalRollsCount * 100, 2)
+                elementSelector: k => TotalRollsCount == 0 
+                    ? 0m
+                    : Math.Round(RollsCount[k] / (decimal)TotalRollsCount * 100, 2)
             );
         }
 
-        private List<string> GetRollKeys(int roll) {
-            List<string> keys = new();
-            bool hasBeenFound = false;
-
-            foreach (var key in RollCategories) {
-                if (IsInRange(roll, key)) {
-                    keys.Add(key);
-                    hasBeenFound = true;
-                } else {
-                    if (hasBeenFound) {
-                        break;
-                    }
-                }
-            }
-
-            return keys;
-        }
-
-        private bool IsInRange(int roll, string rollKey) {
-            int[] limits = rollKey.Split("-").Select(int.Parse).ToArray();
-            if (limits.Length == 1) {
-                return roll == limits[0];
-            } else if (limits.Length == 2) {
-                return roll >= limits[0] && roll <= limits[1];
-            } else {
-                return false;
-            }
-        }
-
         private void CalculateSignificance(string dieType) {
-            double[] observed = observedRollValues.GroupBy(roll => roll).Select(group => (double)group.Count()).ToArray();
-            observed = observed.Concat(Enumerable.Repeat(0d, GetDieFaces(dieType) - observed.Length)).ToArray();
-            double[] expected = Enumerable.Repeat((double)observedRollValues.Count / GetDieFaces(dieType), observed.Length).ToArray();
-            int degreesOfFreedom = GetDieFaces(dieType) - 1;
+            double[] observed = observedRollValues
+                .GroupBy(roll => roll)
+                .Select(group => (double)group.Count())
+                .ToArray();
+
+            observed = observed
+                .Concat(Enumerable.Repeat(0d, DiceUtility.GetNumberOfFaces(dieType) - observed.Length))
+                .ToArray();
+
+            double[] expected = Enumerable
+                .Repeat((double)observedRollValues.Count / DiceUtility.GetNumberOfFaces(dieType), observed.Length)
+                .ToArray();
+
+            int degreesOfFreedom = DiceUtility.GetNumberOfFaces(dieType) - 1;
 
             var chi = new ChiSquareTest(expected, observed, degreesOfFreedom);
             TestResults = new ChiSquareTestResults(Math.Round(chi.Statistic, 4), chi.DegreesOfFreedom, observedRollValues.Count,
-                Math.Round(chi.PValue, 4), chi.Significant, GetDieFaces(dieType) * 5);
+                Math.Round(chi.PValue, 4), chi.Significant, DiceUtility.GetNumberOfFaces(dieType) * 5);
 
             observedRollValues.Clear();
         }
-
-        private int GetDieFaces(string dieType) => int.Parse(dieType[1..]);
     }
 }

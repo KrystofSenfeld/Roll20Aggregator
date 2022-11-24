@@ -5,8 +5,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Roll20Aggregator.Models;
+using Roll20Aggregator.Utility;
 
-namespace Roll20Aggregator.Services {
+namespace Roll20Aggregator.Services
+{
     public class FileParser {
         private readonly HtmlDocument htmlDocument;
 
@@ -47,7 +49,7 @@ namespace Roll20Aggregator.Services {
                 AllCharacters = characterNames
                     .OrderBy(name => name)
                     .ToList(),
-                AllDieTypes = DiceResultGroups.ResultGroupsByDieType.Keys
+                AllDieTypes = DiceUtility.ResultGroupsByDieType.Keys
                     .Where(dieType => dieTypes.Contains(dieType))
                     .Reverse()
                     .ToList(),
