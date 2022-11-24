@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net.Http;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Roll20Aggregator.Models;
@@ -8,10 +9,12 @@ namespace Roll20Aggregator.Components {
     public partial class FileUpload {
         [Inject] NavigationManager NavigationManager { get; set; }
         [Inject] ParsingSession ParsingSession { get; set; }
+        [Inject] HttpClient HttpClient { get; set; }
 
         private readonly FileUploadModel fileUploadModel = new();
 
-        private async void RunDemo() {
+        public async void RunDemo() {
+            await ParsingSession.StartSession(await HttpClient.GetStringAsync("sample.txt"));
             Debug.WriteLine("Upload and parse complete; redirecting to results.");
             NavigationManager.NavigateTo("/results");
         }

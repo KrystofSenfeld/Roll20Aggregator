@@ -13,12 +13,28 @@ namespace Roll20Aggregator.Services {
         public Dictionary<string, RollStats> CurrentStats { get; private set; } = new();
         public RollStats CurrentGlobalStats { get; private set; } = new();
 
+        public async Task StartSession(string demoFileText) {
+            IsLoading = true;
+
+            FileReader reader = new(ChatLog);
+            FileParser parser = new(ChatLog, await reader.ReadDemoAsync(demoFileText));
+
+            await parser.Parse();
+
+            await SetDie(ChatLog.AllDieTypes.First());
+            IsInitialized = true;
+            IsLoading = false;
+        }
+
         public async Task StartSession(IBrowserFile file) {
             IsLoading = true;
 
             ChatLog.ChatLogFile = file;
-            Parser parser = new();
-            await parser.Parse(ChatLog);
+
+            FileReader reader = new(ChatLog);
+            FileParser parser = new(ChatLog, await reader.ReadAsync());
+
+            await parser.Parse();
 
             await SetDie(ChatLog.AllDieTypes.First());
             IsInitialized = true;
