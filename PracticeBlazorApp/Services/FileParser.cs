@@ -8,7 +8,6 @@ using Roll20Aggregator.Models;
 
 namespace Roll20Aggregator.Services {
     public class FileParser {
-        private readonly ChatLog chatLog;
         private readonly HtmlDocument htmlDocument;
 
         private readonly Regex authorQuery = new(@"(\w)+");
@@ -22,18 +21,19 @@ namespace Roll20Aggregator.Services {
         private readonly Dictionary<string, HashSet<string>> characterNameByAvatar = new();
         private readonly HashSet<string> dieTypes = new();
 
+        private int parsedMessagesCount = 0;
+
         private string currentCharacter = null;
         private string currentAvatar = null;
 
-        public FileParser(ChatLog chatLog, HtmlDocument htmlDocument) {
-            this.chatLog = chatLog;
+        public FileParser(HtmlDocument htmlDocument) {
             this.htmlDocument = htmlDocument;
         }
 
 
-        public async Task Parse() {
-            if (chatLog == null || htmlDocument == null) {
-                return;
+        public async Task<ParseResultsDto> Parse() {
+            if (htmlDocument == null) {
+                throw new ArgumentNullException();
             }
 
             ParseMessagesForRolls();
@@ -41,18 +41,22 @@ namespace Roll20Aggregator.Services {
 
             // Console.WriteLine(string.Join(", ", rolls.Where(r => r.DieType == "d100" && r.RolledBy == "Torian York").Select(r => r.Value.ToString())));
 
-            chatLog.AllRolls = rolls.ToList();
-
-            chatLog.AllCharacters = characterNames.ToList()
-                .OrderBy(name => name)
-                .ToList();
-
-            chatLog.AllDieTypes = RollKeys.Keys.Keys.ToList()
-                .Where(dieType => dieTypes.Contains(dieType))
-                .Reverse()
-                .ToList();
-
-            await Task.CompletedTask;
+            return new ParseResultsDto {
+                ParsedMessagesCount = parsedMessagesCount,
+                AllRolls = rolls.ToList(),
+                AllCharacters = characterNames
+                    .OrderBy(name => name)
+                    .ToList(),
+                AllDieTypes = RollKeys.Keys.Keys
+                    .Where(dieType => dieTypes.Contains(dieType))
+                    .Reverse()
+                    .ToList(),
+                PrimaryDieType = rolls
+                    .GroupBy(roll => roll.DieType)
+                    .OrderByDescending(group => group.Count())
+                    .Select(group => group.Key)
+                    .FirstOrDefault(),
+            };
         }
 
         private void ParseMessagesForRolls() {
@@ -65,6 +69,8 @@ namespace Roll20Aggregator.Services {
 
             while (messageNode != null) {
                 try {
+                    parsedMessagesCount++;
+
                     HashSet<string> classes = messageNode.GetClasses().ToHashSet();
 
                     // Skip unwanted message types.

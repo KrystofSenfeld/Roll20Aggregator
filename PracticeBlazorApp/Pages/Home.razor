@@ -6,7 +6,29 @@
         </h1>
     </div>
 
-    <FileUpload />
+    <div class="w-100 d-flex flex-column justify-content-center align-items-center align-content-center">
+        <InputFile OnChange="UploadFileAndParse" class="form-control form-control-lg"/>
+
+        <p class="mt-3">or...</p>
+
+        <button type="button"
+                class="btn btn-primary"
+                disabled="@ParsingSession.IsLoading"
+                @onclick="() => StartAggregator()">
+                
+            Show Me a Demo
+        </button>
+    </div>
+    
+    @if (ParsingSession.IsLoading) {
+        <div class="w-100 text-center mt-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+
+            <p class="mt-3 text-primary">This may take a while...</p>
+        </div>
+    }
 
     <div class="alert alert-secondary pb-6 text-dark">
         <h5 class="alert-heading">Instructions:</h5>
@@ -23,14 +45,6 @@
             <li>Find the line following line (it should be about the 10th): <code>&lt;div id=&quot;textchat class=&quot;textchatcontainer&quot;&gt;...&lt;/div&gt;</code></li>
             <li>Right click this line and select Copy > Inner HTML. Save the contents to a text file - this is the file to upload.</li>
         </ol>
-
-        <p>
-            If you run into problems, you may have to clear your cache - try a hard refresh with Ctrl + F5 or Ctrl + Shift + R.
-        </p>
-
-        <p>
-            These files are large - loading may take a while!
-        </p>
 
         <p>
             Because of the way Roll20 messages are marked up in HTML, parsing is not guaranteed to be 100% accurate.

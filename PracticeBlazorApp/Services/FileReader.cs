@@ -4,42 +4,40 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
-using Roll20Aggregator.Models;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Roll20Aggregator.Services {
-    public class FileReader {
-        private ChatLog chatLog;
+    public static class FileReader {
+        public static readonly long MaxFileSize = 1024 * 1024 * 10; // 10 MB
 
-        public FileReader(ChatLog chatLog) {
-            this.chatLog = chatLog;
-        }
-
-        public async Task<HtmlDocument> ReadDemoAsync(string demoFileText) {
+        public static async Task<HtmlDocument> ReadAsync(string chatLog) {
             HtmlDocument htmlDoc = new();
-            htmlDoc.LoadHtml(demoFileText);
+            htmlDoc.LoadHtml(chatLog);
 
+            await Task.CompletedTask;
             return htmlDoc;
         }
 
-        public async Task<HtmlDocument> ReadAsync() {
+        public static async Task<HtmlDocument> ReadAsync(IBrowserFile chatLog) {
             if (chatLog == null) {
                 return null;
             }
 
-            using StreamReader stream = new (chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize));
+            using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
+            string chatLogText = await stream.ReadToEndAsync();
 
             HtmlDocument htmlDoc = new();
-            htmlDoc.LoadHtml(await stream.ReadToEndAsync());
+            htmlDoc.LoadHtml(chatLogText);
 
             return htmlDoc;
         }
 
-        public async Task BufferedReadAsync() {
+        public static async Task BufferedReadAsync(IBrowserFile chatLog) {
             if (chatLog == null) {
                 return;
             }
 
-            using StreamReader stream = new(chatLog.ChatLogFile.OpenReadStream(FileUploadModel.MaxFileSize));
+            using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
 
             // Chat logs can be massive, so we don't want to read everything into memory at once.
             int bufferSize = 1024 * 100; // 100 KB

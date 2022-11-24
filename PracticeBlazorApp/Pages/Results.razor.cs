@@ -60,7 +60,7 @@ namespace Roll20Aggregator.Pages {
         public decimal GroupAverage() {
             decimal runningTotalSum = 0;
             int runningTotalCount = 0;
-            foreach (var kvp in ParsingSession.CurrentStats) {
+            foreach (var kvp in ParsingSession.CurrentStatsByName) {
                 runningTotalSum += kvp.Value.AverageRoll * kvp.Value.TotalRollsCount;
                 runningTotalCount += kvp.Value.TotalRollsCount;
             }
@@ -68,8 +68,8 @@ namespace Roll20Aggregator.Pages {
         }
 
         public decimal GroupPercent(string key) {
-            decimal total = ParsingSession.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum();
-            decimal dividend = ParsingSession.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum();
+            decimal total = ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.RollsCount[key]).Sum();
+            decimal dividend = ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.TotalRollsCount).Sum();
 
             return dividend == 0m ? 0m :
                 Math.Round(total / dividend * 100m, 2);

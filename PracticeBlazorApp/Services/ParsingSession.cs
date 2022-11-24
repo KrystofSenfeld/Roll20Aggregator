@@ -1,68 +1,80 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
-using Roll20Aggregator.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using HtmlAgilityPack;
+using Microsoft.AspNetCore.Components.Forms;
+using Roll20Aggregator.Models;
 
 namespace Roll20Aggregator.Services {
     public class ParsingSession {
+        private readonly HttpClient httpClient;
+
+        public ParsingSession(HttpClient httpClient) {
+            this.httpClient = httpClient;
+        }
+
         public bool IsInitialized { get; set; } = false;
         public bool IsLoading { get; private set; } = false;
-        public ChatLog ChatLog { get; private set; } = new();
+
+        public ParseResultsDto ParseResults { get; private set; } = new();
+
         public string CurrentDieType { get; private set; } = string.Empty;
-        public Dictionary<string, RollStats> CurrentStats { get; private set; } = new();
+        public Dictionary<string, RollStats> CurrentStatsByName { get; private set; } = new();
         public RollStats CurrentGlobalStats { get; private set; } = new();
 
-        public async Task StartSession(string demoFileText) {
+        public async Task<bool> StartSession(IBrowserFile file) {
             IsLoading = true;
 
-            FileReader reader = new(ChatLog);
-            FileParser parser = new(ChatLog, await reader.ReadDemoAsync(demoFileText));
+            HtmlDocument htmlDocument;
 
-            await parser.Parse();
+            if (file == null) {
+                htmlDocument = await FileReader.ReadAsync(await httpClient.GetStringAsync("sample.txt"));
+            } else {
+                htmlDocument = await FileReader.ReadAsync(file);
+            }
 
-            await SetDie(ChatLog.AllDieTypes.First());
+            if (htmlDocument == null) {
+                Trace.WriteLine("Could not start session as no valid HTML was found.");
+                return false;
+            }
+
+            FileParser parser = new(htmlDocument);
+            ParseResults = await parser.Parse();
+
+            if (ParseResults == null || !ParseResults.AllRolls.Any()) {
+                Trace.WriteLine("Could not start session as no rolls were parsed.");
+                return false;
+            }
+
+            SetCurrentDieType(ParseResults.PrimaryDieType);
+
             IsInitialized = true;
             IsLoading = false;
+
+            return true;
         }
 
-        public async Task StartSession(IBrowserFile file) {
-            IsLoading = true;
-
-            ChatLog.ChatLogFile = file;
-
-            FileReader reader = new(ChatLog);
-            FileParser parser = new(ChatLog, await reader.ReadAsync());
-
-            await parser.Parse();
-
-            await SetDie(ChatLog.AllDieTypes.First());
-            IsInitialized = true;
-            IsLoading = false;
-        }
-
-        public async Task SetDie(string dieType) {
+        public void SetCurrentDieType(string dieType) {
             CurrentDieType = dieType;
-            await SetStatsDict();
+            SetVisibleStats();
         }
 
-        private Task SetStatsDict() {
-            CurrentStats = CurrentStats.Keys.ToDictionary(
-                keySelector:c => c,
-                elementSelector: c => new RollStats(CurrentDieType, c, ChatLog.AllRolls));
+        private void SetVisibleStats() {
+            CurrentStatsByName = CurrentStatsByName.Keys.ToDictionary(
+                keySelector: c => c,
+                elementSelector: c => new RollStats(CurrentDieType, c, ParseResults.AllRolls));
             
-            CurrentGlobalStats = new RollStats(CurrentDieType, ChatLog.AllRolls);
-            return Task.CompletedTask;
+            CurrentGlobalStats = new RollStats(CurrentDieType, ParseResults.AllRolls);
         }
 
-        public Task AddToStatsDict(string character) {
-            CurrentStats.Add(character, new RollStats(CurrentDieType, character, ChatLog.AllRolls));
-            return Task.CompletedTask;
+        public void AddToVisibleStats(string character) {
+            CurrentStatsByName.Add(character, new RollStats(CurrentDieType, character, ParseResults.AllRolls));
         }
 
-        public Task RemoveFromStatsDict(string character) {
-            CurrentStats.Remove(character);
-            return Task.CompletedTask;
+        public void RemoveFromVisibleStats(string character) {
+            CurrentStatsByName.Remove(character);
         }
     }
 }

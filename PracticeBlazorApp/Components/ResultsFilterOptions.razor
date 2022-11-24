@@ -4,7 +4,7 @@
             <h5>Select Die</h5>
             <div class="col">
                 <select class="form-select" @onchange="DieSelected">
-                    @foreach (var dieType in ParsingSession.ChatLog.AllDieTypes) {
+                    @foreach (var dieType in ParsingSession.ParseResults.AllDieTypes) {
                         <option value="@dieType">@dieType</option>
                     }
                 </select>
@@ -14,7 +14,7 @@
         <div><h5>Select Characters</h5></div>
 
         <div class="list-group list-group-flush overflow-auto flex-grow-1">
-            @foreach (var character in ParsingSession.ChatLog.AllCharacters) {
+            @foreach (var character in ParsingSession.ParseResults.AllCharacters) {
                 <button type="button" class="list-group-item list-group-item-@GetColorClass(character) list-group-item-action"
                     @onclick="() => ToggleCharacterSelected(character)">
                     <div class="d-flex justify-content-between">

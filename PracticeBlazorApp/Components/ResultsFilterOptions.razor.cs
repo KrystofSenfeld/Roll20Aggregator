@@ -9,20 +9,20 @@ namespace Roll20Aggregator.Components {
 
         public string GetColorClass(string character) => !IsSelected(character) ? "light" : "primary";
         public string GetIcon(string character) => !IsSelected(character) ? "plus" : "xmark";
-        public string GetRollCount(string character) => ParsingSession.CurrentStats[character].TotalRollsCount.ToString();
+        public string GetRollCount(string character) => ParsingSession.CurrentStatsByName[character].TotalRollsCount.ToString();
 
-        public bool IsSelected(string character) => ParsingSession.CurrentStats.ContainsKey(character);
+        public bool IsSelected(string character) => ParsingSession.CurrentStatsByName.ContainsKey(character);
 
-        public async void DieSelected(ChangeEventArgs e) {
-            await ParsingSession.SetDie(e.Value.ToString());
+        public void DieSelected(ChangeEventArgs e) {
+            ParsingSession.SetCurrentDieType(e.Value.ToString());
             Parent.Refresh();
         }
 
-        public async void ToggleCharacterSelected(string character) {
-            if (!ParsingSession.CurrentStats.ContainsKey(character)) {
-                await ParsingSession.AddToStatsDict(character);
+        public void ToggleCharacterSelected(string character) {
+            if (!ParsingSession.CurrentStatsByName.ContainsKey(character)) {
+                ParsingSession.AddToVisibleStats(character);
             } else {
-                await ParsingSession.RemoveFromStatsDict(character);
+                ParsingSession.RemoveFromVisibleStats(character);
             }
 
             StateHasChanged();

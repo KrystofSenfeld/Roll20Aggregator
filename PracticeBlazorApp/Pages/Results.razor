@@ -71,13 +71,13 @@
 
                     <tr class="table-light">
                         <td>Total (Selected)</td>
-                        <td>@ParsingSession.CurrentStats.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
+                        <td>@ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
                         <td>@GroupAverage()</td>
 
                         @foreach (var key in RollStats.RollCategories) {
                             <td>
                                 @if (DisplayType == RollDisplayType.Count) {
-                                    @ParsingSession.CurrentStats.Select(kvp => kvp.Value.RollsCount[key]).Sum()
+                                    @ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.RollsCount[key]).Sum()
                                 }
                                 else if (DisplayType == RollDisplayType.Percent) {
                                     @($"{GroupPercent(key)}%")
@@ -86,7 +86,7 @@
                         }
                     </tr>
 
-                    @foreach (var kvp in ParsingSession.CurrentStats) {
+                    @foreach (var kvp in ParsingSession.CurrentStatsByName) {
                         <tr>
                             <td>@kvp.Key</td>
                             <td>@kvp.Value.TotalRollsCount</td>

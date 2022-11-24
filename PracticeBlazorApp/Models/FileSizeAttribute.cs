@@ -10,8 +10,7 @@ namespace Roll20Aggregator.Models {
         }
 
         public override bool IsValid(object value) {
-            IBrowserFile file = value as IBrowserFile;
-            if (file != null) {
+            if (value is IBrowserFile file) {
                 return file.Size < MaxFileSize;
             }
 
