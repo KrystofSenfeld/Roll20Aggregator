@@ -33,7 +33,7 @@ namespace Roll20Aggregator.Services
         }
 
 
-        public async Task<ParseResultsDto> Parse() {
+        public ParseResultsDto Parse() {
             if (htmlDocument == null) {
                 throw new ArgumentNullException();
             }
@@ -45,14 +45,18 @@ namespace Roll20Aggregator.Services
 
             return new ParseResultsDto {
                 ParsedMessagesCount = parsedMessagesCount,
+
                 AllRolls = rolls.ToList(),
+
                 AllCharacters = characterNames
                     .OrderBy(name => name)
                     .ToList(),
+
                 AllDieTypes = DiceUtility.ResultGroupsByDieType.Keys
                     .Where(dieType => dieTypes.Contains(dieType))
                     .Reverse()
                     .ToList(),
+
                 PrimaryDieType = rolls
                     .GroupBy(roll => roll.DieType)
                     .OrderByDescending(group => group.Count())
