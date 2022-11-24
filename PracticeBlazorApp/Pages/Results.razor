@@ -36,7 +36,7 @@
                         <th scope="col">Character</th>
                         <th scope="col">Total Rolls</th>
                         <th scope="col">Average Roll</th>
-                        <th scope="col" colspan="@RollStats.ResultGroups.Length" class="tableSwitchHeader">
+                        <th scope="col" colspan="@RollStatsRowViewModel.ResultGroups.Length" class="tableSwitchHeader">
                             Rolls (by @DisplayType)
                         </th>
                     </tr>
@@ -45,7 +45,7 @@
                         <th></th>
                         <th></th>
                         <th></th>
-                        @foreach (var key in RollStats.ResultGroups) {
+                        @foreach (var key in RollStatsRowViewModel.ResultGroups) {
                             <th>@key</th>
                         }
                     </tr>
@@ -57,7 +57,7 @@
                         <td>@ParsingSession.CurrentGlobalStats.TotalRollsCount</td>
                         <td>@ParsingSession.CurrentGlobalStats.AverageRoll</td>
 
-                        @foreach (var key in RollStats.ResultGroups) {
+                        @foreach (var key in RollStatsRowViewModel.ResultGroups) {
                             <td>
                                 @if (DisplayType == RollDisplayType.Count) {
                                     @ParsingSession.CurrentGlobalStats.RollsCount[key]
@@ -74,7 +74,7 @@
                         <td>@ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.TotalRollsCount).Sum()</td>
                         <td>@GroupAverage()</td>
 
-                        @foreach (var key in RollStats.ResultGroups) {
+                        @foreach (var key in RollStatsRowViewModel.ResultGroups) {
                             <td>
                                 @if (DisplayType == RollDisplayType.Count) {
                                     @ParsingSession.CurrentStatsByName.Select(kvp => kvp.Value.RollsCount[key]).Sum()

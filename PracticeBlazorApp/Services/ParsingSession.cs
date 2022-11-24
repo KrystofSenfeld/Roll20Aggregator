@@ -21,8 +21,8 @@ namespace Roll20Aggregator.Services {
         public ParseResultsDto ParseResults { get; private set; } = new();
 
         public string CurrentDieType { get; private set; } = string.Empty;
-        public Dictionary<string, RollStats> CurrentStatsByName { get; private set; } = new();
-        public RollStats CurrentGlobalStats { get; private set; } = new();
+        public Dictionary<string, RollStatsRowViewModel> CurrentStatsByName { get; private set; } = new();
+        public RollStatsRowViewModel CurrentGlobalStats { get; private set; } = new();
 
         public async Task<bool> StartSession(IBrowserFile file) {
             IsLoading = true;
@@ -64,13 +64,13 @@ namespace Roll20Aggregator.Services {
         private void SetVisibleStats() {
             CurrentStatsByName = CurrentStatsByName.Keys.ToDictionary(
                 keySelector: c => c,
-                elementSelector: c => new RollStats(CurrentDieType, c, ParseResults.AllRolls));
+                elementSelector: c => new RollStatsRowViewModel(CurrentDieType, c, ParseResults.AllRolls));
             
-            CurrentGlobalStats = new RollStats(CurrentDieType, ParseResults.AllRolls);
+            CurrentGlobalStats = new RollStatsRowViewModel(CurrentDieType, ParseResults.AllRolls);
         }
 
         public void AddToVisibleStats(string character) {
-            CurrentStatsByName.Add(character, new RollStats(CurrentDieType, character, ParseResults.AllRolls));
+            CurrentStatsByName.Add(character, new RollStatsRowViewModel(CurrentDieType, character, ParseResults.AllRolls));
         }
 
         public void RemoveFromVisibleStats(string character) {

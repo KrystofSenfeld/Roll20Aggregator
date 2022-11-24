@@ -17,7 +17,7 @@ namespace Roll20Aggregator.Pages {
         }
 
         public RollDisplayType DisplayType { get; set; } = RollDisplayType.Count;
-        public ChiSquareTestResults TestResults => ParsingSession.CurrentGlobalStats.TestResults;
+        public ChiSquareTestResultsDto TestResults => ParsingSession.CurrentGlobalStats.TestResults;
         public string TestConclusion {
             get {
                 if (TestResults == null) {

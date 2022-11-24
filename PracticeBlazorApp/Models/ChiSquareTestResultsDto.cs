@@ -1,6 +1,6 @@
 ﻿namespace Roll20Aggregator.Models {
-    public class ChiSquareTestResults {
-        public ChiSquareTestResults(double statistic, int degreesOfFreedom, int sampleSize, double pValue, bool significant, int minimumRollsRequired) {
+    public class ChiSquareTestResultsDto {
+        public ChiSquareTestResultsDto(double statistic, int degreesOfFreedom, int sampleSize, double pValue, bool significant, int minimumRollsRequired) {
             Statistic = statistic;
             DegreesOfFreedom = degreesOfFreedom;
             SampleSize = sampleSize;

@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Roll20Aggregator.Models
 {
-    public class RollStats {
+    public class RollStatsRowViewModel {
         private List<double> observedRollValues = new(); // used for statistical analysis
 
         public int TotalRollsCount { get; private set; } = 0;
@@ -14,16 +14,16 @@ namespace Roll20Aggregator.Models
         public static string[] ResultGroups { get; private set; } = Array.Empty<string>();
         public Dictionary<string, int> RollsCount { get; private set; } = new();
         public Dictionary<string, decimal> RollsPercent { get; private set; } = new();
-        public ChiSquareTestResults TestResults { get; set; }
+        public ChiSquareTestResultsDto TestResults { get; set; }
 
-        public RollStats() {}
-        public RollStats(string dieType, List<RollDto> rolls) {
+        public RollStatsRowViewModel() {}
+        public RollStatsRowViewModel(string dieType, List<RollDto> rolls) {
             ResultGroups = DiceUtility.GetResultGroups(dieType);
             ParseRolls(dieType, rolls);
             CalculateSignificance(dieType);
         }
 
-        public RollStats(string dieType, string character, List<RollDto> rolls) {
+        public RollStatsRowViewModel(string dieType, string character, List<RollDto> rolls) {
             ResultGroups = DiceUtility.GetResultGroups(dieType);
             ParseRolls(dieType, character, rolls);
         }
@@ -80,7 +80,7 @@ namespace Roll20Aggregator.Models
             int degreesOfFreedom = DiceUtility.GetNumberOfFaces(dieType) - 1;
 
             var chi = new ChiSquareTest(expected, observed, degreesOfFreedom);
-            TestResults = new ChiSquareTestResults(Math.Round(chi.Statistic, 4), chi.DegreesOfFreedom, observedRollValues.Count,
+            TestResults = new ChiSquareTestResultsDto(Math.Round(chi.Statistic, 4), chi.DegreesOfFreedom, observedRollValues.Count,
                 Math.Round(chi.PValue, 4), chi.Significant, DiceUtility.GetNumberOfFaces(dieType) * 5);
 
             observedRollValues.Clear();
