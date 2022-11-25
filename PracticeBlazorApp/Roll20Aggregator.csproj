@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Accord" Version="3.8.0" />
     <PackageReference Include="Accord.Statistics" Version="3.8.0" />
+    <PackageReference Include="AngleSharp" Version="0.17.1" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.42" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.14" PrivateAssets="all" />

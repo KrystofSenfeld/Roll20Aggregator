@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Roll20Aggregator.Models;
 using Roll20Aggregator.Utility;
 
-namespace Roll20Aggregator.Services
-{
+namespace Roll20Aggregator.Services {
     public class FileParser {
         private readonly HtmlDocument htmlDocument;
 

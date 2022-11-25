@@ -18,6 +18,8 @@ namespace Roll20Aggregator.Services {
             return htmlDoc;
         }
 
+        // This is simple, but not ideal. We're loading everything into memory at once, which
+        // could be a problem for large files.
         public static async Task<HtmlDocument> ReadAsync(IBrowserFile chatLog) {
             if (chatLog == null) {
                 return null;
@@ -32,6 +34,8 @@ namespace Roll20Aggregator.Services {
             return htmlDoc;
         }
 
+        // TODO: Buffering file read would be preferred, but it presents some complications. We
+        // need to ensure that each segment we buffer is valid HTML for the parser.
         public static async Task BufferedReadAsync(IBrowserFile chatLog) {
             if (chatLog == null) {
                 return;
@@ -39,7 +43,6 @@ namespace Roll20Aggregator.Services {
 
             using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
 
-            // Chat logs can be massive, so we don't want to read everything into memory at once.
             int bufferSize = 1024 * 100; // 100 KB
             char[] bufferArray = new char[bufferSize];
 
