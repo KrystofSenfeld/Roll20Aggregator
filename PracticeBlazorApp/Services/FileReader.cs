@@ -43,7 +43,7 @@ namespace Roll20Aggregator.Services {
 
             using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
 
-            int bufferSize = 1024 * 100; // 100 KB
+            int bufferSize = 1024 * 500; // 500 KB
             char[] bufferArray = new char[bufferSize];
 
             StringBuilder bufferText = new();
@@ -52,7 +52,7 @@ namespace Roll20Aggregator.Services {
             string messageTag = "<div class=\"message";
             string endTag = "<script";
 
-            bool foundMessageTag = false;
+            bool foundFirstMessageTag = false;
             int messageTagIndex;
 
             while (await stream.ReadAsync(bufferArray, 0, bufferSize) > 0) {
@@ -62,23 +62,27 @@ namespace Roll20Aggregator.Services {
                 // Search buffer for occurrences of message opening tags and add messages to list.
                 while ((messageTagIndex = bufferTextString.IndexOf(messageTag)) >= 0) {
 
-                    // The very first time we find a message tag, we don't know where the message ends.
-                    // Thus it's only once we get the second message tag that we can start adding text
-                    // to the message list.
-                    if (foundMessageTag) {
-                        messages.Add(messageTag + bufferTextString[..messageTagIndex]);
+                    if (!foundFirstMessageTag) {
+                        // The very first time we find a message tag, we don't know where the message ends.
+                        // Thus it's only once we get the second message tag that we can start adding text
+                        // to the message list.
+
+                        foundFirstMessageTag = true;
+
                     } else {
-                        foundMessageTag = true;
+                        messages.Add(messageTag + bufferTextString[..messageTagIndex]);
                     }
 
-                    // Remove found message from our buffer so that we can search for the next one.
+                    // Everything before the start of the found message, including the tag, can be removed.
                     bufferText.Remove(0, messageTagIndex + messageTag.Length);
+                    
+                    // Remove found message tag from our buffer so that we can search for the next one.
                     bufferTextString = bufferText.ToString();
                 }
 
                 // Check if we've reached the end of the document. If we have, the text remaining
                 // before the ending tag belongs to the last message.
-                if (bufferTextString.Contains(endTag) && foundMessageTag) {
+                if (bufferTextString.Contains(endTag) && foundFirstMessageTag) {
                     messages.Add(messageTag + bufferTextString + "></script>");
                     Console.WriteLine("Reached the end of file...");
                 }
