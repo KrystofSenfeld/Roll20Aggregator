@@ -1,0 +1,7 @@
+﻿<div class="container">
+    @foreach (var roll in ParsingSession.ParseResults.AllRolls) {
+        <p>
+            <strong>@roll.RolledBy</strong> rolled a @roll.DieType: <strong>@roll.Value</strong>
+        </p>
+    }
+</div>
