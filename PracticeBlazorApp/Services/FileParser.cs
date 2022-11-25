@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using AngleSharp.Dom;
 using HtmlAgilityPack;
 using Roll20Aggregator.Models;
 using Roll20Aggregator.Utility;
@@ -61,6 +62,26 @@ namespace Roll20Aggregator.Services {
                     .Select(group => group.Key)
                     .FirstOrDefault(),
             };
+        }
+
+        private void ParseMessagesForRollsAngleSharp(IDocument doc) {
+            var messageNodes = doc.GetElementsByClassName("message");
+
+            if (!messageNodes.Any()) {
+                Console.WriteLine("Parser was expecting messages but got none.");
+                return;
+            }
+
+            parsedMessagesCount += messageNodes.Length;
+
+            foreach (var messageNode in messageNodes) {
+                HashSet<string> classes = messageNode.ClassList.ToHashSet();
+
+                // Skip unwanted message types.
+                if (classes.Contains("desc") || classes.Contains("private") || classes.Contains("whisper")) {
+                    continue;
+                }
+            }
         }
 
         private void ParseMessagesForRolls() {
