@@ -41,7 +41,7 @@ namespace Roll20Aggregator.Services {
             }
 
             FileParser parser = new(htmlDocument);
-            ParseResults = await parser.Parse();
+            ParseResults = parser.Parse();
 
             if (ParseResults == null || !ParseResults.AllRolls.Any()) {
                 Trace.WriteLine("Could not start session as no rolls were parsed.");
