@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AngleSharp.Dom;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Components.Forms;
 using Roll20Aggregator.Models;
@@ -27,12 +28,13 @@ namespace Roll20Aggregator.Services {
         public async Task<bool> StartSession(IBrowserFile file) {
             IsLoading = true;
 
-            HtmlDocument htmlDocument;
+            IDocument htmlDocument;
 
             if (file == null) {
-                htmlDocument = await FileReader.ReadAsync(await httpClient.GetStringAsync("sample.txt"));
+                htmlDocument = await FileReader.ReadAsyncAngleSharp(await httpClient.GetStringAsync("sample.txt"));
             } else {
-                htmlDocument = await FileReader.ReadAsync(file);
+                // htmlDocument = await FileReader.ReadAsync(file);
+                htmlDocument = await FileReader.ReadAsyncAngleSharp(file);
             }
 
             if (htmlDocument == null) {

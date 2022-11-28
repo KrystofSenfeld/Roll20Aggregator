@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Components.Forms;
@@ -13,15 +14,15 @@ namespace Roll20Aggregator.Services {
     public static class FileReader {
         public static readonly long MaxFileSize = 1024 * 1024 * 10; // 10 MB
 
-        public static async Task<HtmlDocument> ReadAsync(string chatLog) {
-            HtmlDocument htmlDoc = new();
-            htmlDoc.LoadHtml(chatLog);
+        public static async Task<IHtmlDocument> ReadAsyncAngleSharp(string chatLog) {
+            var config = Configuration.Default.WithDefaultLoader();
+            var context = BrowsingContext.New(config);
+            var parser = context.GetService<IHtmlParser>();
 
-            await Task.CompletedTask;
-            return htmlDoc;
+            return parser.ParseDocument(chatLog);
         }
 
-        public static async Task<IDocument> ReadAsyncAngleSharp(IBrowserFile chatLog) {
+        public static async Task<IHtmlDocument> ReadAsyncAngleSharp(IBrowserFile chatLog) {
             if (chatLog == null) {
                 return null;
             }
@@ -29,11 +30,15 @@ namespace Roll20Aggregator.Services {
             using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
             string chatLogText = await stream.ReadToEndAsync();
 
-            var config = Configuration.Default.WithDefaultLoader();
-            var context = BrowsingContext.New(config);
-            var parser = context.GetService<IHtmlParser>();
+            return await ReadAsyncAngleSharp(chatLogText);
+        }
 
-            return parser.ParseDocument(chatLogText);
+        public static async Task<HtmlDocument> ReadAsync(string chatLog) {
+            HtmlDocument htmlDoc = new();
+            htmlDoc.LoadHtml(chatLog);
+
+            await Task.CompletedTask;
+            return htmlDoc;
         }
 
         // This is simple, but not ideal. We're loading everything into memory at once, which
@@ -46,10 +51,7 @@ namespace Roll20Aggregator.Services {
             using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
             string chatLogText = await stream.ReadToEndAsync();
 
-            HtmlDocument htmlDoc = new();
-            htmlDoc.LoadHtml(chatLogText);
-
-            return htmlDoc;
+            return await ReadAsync(chatLogText);
         }
 
         // TODO: Buffering file read would be preferred, but it presents some complications. We

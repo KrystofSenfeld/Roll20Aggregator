@@ -9,7 +9,7 @@ using Roll20Aggregator.Utility;
 
 namespace Roll20Aggregator.Services {
     public class FileParser {
-        private readonly HtmlDocument htmlDocument;
+        private readonly IDocument htmlDocument;
 
         private readonly Regex authorQuery = new(@"(\w)+");
         private readonly Regex dieTypeQuery = new("Rolling .*[0-9]*(d[0-9]+)", RegexOptions.IgnoreCase);
@@ -27,7 +27,7 @@ namespace Roll20Aggregator.Services {
         private string currentCharacter = null;
         private string currentAvatar = null;
 
-        public FileParser(HtmlDocument htmlDocument) {
+        public FileParser(IDocument htmlDocument) {
             this.htmlDocument = htmlDocument;
         }
 
@@ -37,7 +37,7 @@ namespace Roll20Aggregator.Services {
                 throw new ArgumentNullException();
             }
 
-            ParseMessagesForRolls();
+            ParseMessagesForRollsAngleSharp();
             TryResolveEmoteEntries();
 
             // Console.WriteLine(string.Join(", ", rolls.Where(r => r.DieType == "d100" && r.RolledBy == "Torian York").Select(r => r.Value.ToString())));
@@ -64,8 +64,8 @@ namespace Roll20Aggregator.Services {
             };
         }
 
-        private void ParseMessagesForRollsAngleSharp(IDocument doc) {
-            var messageNodes = doc.GetElementsByClassName("message");
+        private void ParseMessagesForRollsAngleSharp() {
+            var messageNodes = htmlDocument.GetElementsByClassName("message");
 
             if (!messageNodes.Any()) {
                 Console.WriteLine("Parser was expecting messages but got none.");
@@ -81,11 +81,21 @@ namespace Roll20Aggregator.Services {
                 if (classes.Contains("desc") || classes.Contains("private") || classes.Contains("whisper")) {
                     continue;
                 }
+
+                GetAndLogCharacter(messageNode, classes);
+
+                // Only messages with the rollresult class contain roll blocks.
+                if (classes.Contains("rollresult")) {
+                    ParseRollBlock(messageNode);
+                }
+
+                // Inline roll parsing must be done for all messages since roll blocks can, rarely, contain inline rolls.
+                ParseInlineRolls(messageNode, classes);
             }
         }
 
         private void ParseMessagesForRolls() {
-             HtmlNode messageNode = htmlDocument.DocumentNode.SelectSingleNode("//div[contains(@class, \"message\")]");
+            /*HtmlNode messageNode = null; //  htmlDocument.DocumentNode.SelectSingleNode("//div[contains(@class, \"message\")]");
 
             if (messageNode == null) {
                 Console.WriteLine("Parser was expecting messages but got none.");
@@ -118,31 +128,31 @@ namespace Roll20Aggregator.Services {
                 } catch (Exception ex) {
                     Console.WriteLine($"There was a problem parsing the following message:\n{messageNode.InnerHtml}\n\n" + ex);
                 }
-            }
+            }*/
         }
 
-        private void ParseRollBlock(HtmlNode messageNode) {
-            HtmlNode rollResultNode = messageNode.SelectSingleNode(".//div[contains(@class, \"diceroll\")]");
+        private void ParseRollBlock(IElement messageNode) {
+            IElement rollResultNode = messageNode.QuerySelector("div .diceroll");
 
             if (rollResultNode == null) {
                 return;
             }
 
-            string dieType = rollResultNode.GetClasses().ToArray()[1].ToLowerInvariant();
+            string dieType = rollResultNode.ClassList[1].ToLowerInvariant();
 
-            List<HtmlNode> rollNodes = messageNode.SelectNodes(".//div[contains(@class, 'didroll')]").ToList();
-            rollNodes.ForEach(r => RegisterRoll(currentCharacter, int.Parse(r.InnerText), dieType, false));
+            List<IElement> rollNodes = messageNode.QuerySelectorAll("div .didroll").ToList();
+            rollNodes.ForEach(r => RegisterRoll(currentCharacter, int.Parse(r.TextContent), dieType, false));
         }
 
-        private void ParseInlineRolls(HtmlNode messageNode, IEnumerable<string> classes) {
-            var rollNodes = messageNode.SelectNodes(".//span[contains(@class, \"inlinerollresult\")]");
+        private void ParseInlineRolls(IElement messageNode, IEnumerable<string> classes) {
+            var rollNodes = messageNode.QuerySelectorAll("span .inlinerollresult");
 
             if (rollNodes == null) {
                 return;
             }
 
             foreach (var rollNode in rollNodes) {
-                string rollNodeAttr = rollNode.GetAttributeValue("title", null) ?? rollNode.GetAttributeValue("original-title", null);
+                string rollNodeAttr = rollNode.GetAttribute("title") ?? rollNode.GetAttribute("original-title");
 
                 if (string.IsNullOrEmpty(rollNodeAttr)) {
                     continue;
@@ -154,14 +164,14 @@ namespace Roll20Aggregator.Services {
                 if (classes.Contains("emote")) {
                     // Emote message author is temporarily set to the emote message itself, which will later be
                     // resolved based on confirmed characters and avatars.
-                    rollValues.ForEach(r => RegisterRoll(messageNode.InnerText, int.Parse(r.Groups[1].Value), dieType, true));
+                    rollValues.ForEach(r => RegisterRoll(messageNode.TextContent, int.Parse(r.Groups[1].Value), dieType, true));
                 } else {
                     rollValues.ForEach(r => RegisterRoll(currentCharacter, int.Parse(r.Groups[1].Value), dieType, false));
                 }
             }
         }
 
-        private void GetAndLogCharacter(HtmlNode messageNode, HashSet<string> classes) {
+        private void GetAndLogCharacter(IElement messageNode, HashSet<string> classes) {
             // If this is an emote message, it has no written character name. The avatar must be used
             // to attempt to identify the character.
             if (classes.Contains("emote")) {
@@ -169,19 +179,19 @@ namespace Roll20Aggregator.Services {
                 return;
             }
 
-            HtmlNode authorNode = messageNode.SelectSingleNode(".//span[contains(@class, \"by\")]");
+            IElement authorNode = messageNode.QuerySelector("span .by");
 
             if (authorNode != null) {
-                currentCharacter = authorNode.InnerText[0..^1];
+                currentCharacter = authorNode.TextContent[0..^1];
                 characterNames.Add(currentCharacter);
                 GetAvatar(messageNode);
                 LinkAvatarToCharacter(currentAvatar, currentCharacter);
             }
         }
 
-        private void GetAvatar(HtmlNode messageNode) {
-            HtmlNode avatarNode = messageNode.SelectSingleNode(".//div[contains(@class, \"avatar\")]")?.FirstChild;
-            currentAvatar = avatarNode?.GetAttributeValue("src", null) ?? "blankAvatar";
+        private void GetAvatar(IElement messageNode) {
+            var avatarNode = messageNode.QuerySelector("div .avatar")?.FirstElementChild;
+            currentAvatar = avatarNode?.GetAttribute("src") ?? "blankAvatar";
         }
 
         private void RegisterRoll(string author, int rollValue, string dieType, bool isEmote) {
