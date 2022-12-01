@@ -65,7 +65,7 @@ namespace Roll20Aggregator.Services {
         }
 
         private void ParseMessagesForRollsAngleSharp() {
-            var messageNodes = htmlDocument.GetElementsByClassName("message");
+            var messageNodes = htmlDocument.QuerySelectorAll("div.content > div.message");
 
             if (!messageNodes.Any()) {
                 Console.WriteLine("Parser was expecting messages but got none.");
@@ -73,6 +73,8 @@ namespace Roll20Aggregator.Services {
             }
 
             parsedMessagesCount += messageNodes.Length;
+
+            Console.WriteLine($"message count: {parsedMessagesCount}");
 
             foreach (var messageNode in messageNodes) {
                 HashSet<string> classes = messageNode.ClassList.ToHashSet();
@@ -153,6 +155,8 @@ namespace Roll20Aggregator.Services {
 
             foreach (var rollNode in rollNodes) {
                 string rollNodeAttr = rollNode.GetAttribute("title") ?? rollNode.GetAttribute("original-title");
+
+                Console.WriteLine(rollNodeAttr);
 
                 if (string.IsNullOrEmpty(rollNodeAttr)) {
                     continue;
