@@ -23,7 +23,7 @@ If such a class is found in the message, the HTML can be parsed for the number o
 
 Complications arise in associating the result of the roll with who rolled it. Not all messages have author data. When the same user posts consecutive messages, subsequent messages omit author data. In such a case we must look for the first preceding message that contains author data.
 
-More pressing is the issue of emote message, messages sent with `/em` or `/me`. These messages do not neatly identify which character has sent the message. As humans, we can read a message like
+More pressing is the issue of emote messages, messages sent with `/em` or `/me`. These messages do not neatly identify which character has sent the message. As humans, we can read a message like
 > August the Second shoots a fireball.
 
 and understand that the message was sent by a character named August the Second, but the parser has no way to do this. As exemplified above, we cannot simply assume that the first word of the message is the character name, as characters can have spaces in their name.
