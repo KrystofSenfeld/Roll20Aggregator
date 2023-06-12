@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -19,21 +16,6 @@ namespace Roll20Aggregator.Services {
 
             await Task.CompletedTask;
             return htmlDoc;
-        }
-
-        public static async Task<IDocument> ReadAsyncAngleSharp(IBrowserFile chatLog) {
-            if (chatLog == null) {
-                return null;
-            }
-
-            using StreamReader stream = new(chatLog.OpenReadStream(MaxFileSize));
-            string chatLogText = await stream.ReadToEndAsync();
-
-            var config = Configuration.Default.WithDefaultLoader();
-            var context = BrowsingContext.New(config);
-            var parser = context.GetService<IHtmlParser>();
-
-            return parser.ParseDocument(chatLogText);
         }
 
         // This is simple, but not ideal. We're loading everything into memory at once, which

@@ -40,10 +40,10 @@ The parser attempts to get around this using the following strategy.
 - Files are currently read into memory in their entirety, which is not ideal for large files. There is logic in place to read and parse a file in chunks, but because we're parsing HTML, this gets complicated. This needs to be checked to make sure it works correctly.
 - Add sorting to table.
 - Add support for character to aliases. This would allow you to "group" characters and consider that group as one character, which is useful for instance if a character has changed their name.
-- Upgrade to newer version of .NET.
 
 ## Technology
-- .NET 5.0
+- .NET 7.0
 - Blazor (SPA framework)
 - Bootstrap (CSS framework)
 - HTMLAgilityPack (HTML parser)
+- Accord Statistics
