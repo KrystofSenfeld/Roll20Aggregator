@@ -1,0 +1,7 @@
+﻿@if (Results.CurrentTab == ResultsTabEnum.Log) {
+    @foreach (var roll in LogRolls) {
+        <p>
+            <strong>@roll.RolledBy</strong> rolled a @roll.RawDieType: <strong>@string.Join(", ", roll.Values)</strong>
+        </p>
+    }
+}

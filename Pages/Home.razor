@@ -1,0 +1,52 @@
+﻿<div class="container h-100 d-flex flex-column justify-content-evenly align-items-center">
+    <div>
+        <h1 class="display-1 mb-3">
+            <span class="text-primary"><i class="fa-solid fa-dice-d20"></i></span><span class=fw-bold>Roll</span><span class="fw-lighter">20</span> Aggregator
+        </h1>
+        
+        <InputFile OnChange="UploadFileAndParse" class="form-control form-control-lg" disabled="@(ParsingSession.IsLoading || HasError)"/>
+
+        <div class="w-100 mt-2 text-center">
+            @if (!ParsingSession.IsLoading) {
+                if (HasError) {
+                    <div class="alert alert-danger d-flex align-items-start" role="alert">
+                        <div class="text-start">
+                            Sorry, something went wrong parsing your game.<br />
+                            Please make sure you've selected a valid Roll20 chat log as described in the <a href="/about" class="alert-link">Help / About</a> page.<br />
+                            If the issue persists, please email <a href="mailto: @Strings.SupportEmail" class="alert-link">@Strings.SupportEmail</a> and attach your chat log file.
+                        </div>
+
+                        <div class="clickable ms-2" @onclick="() => HasError = false"><i class="fa-solid fa-xmark"></i></div>
+                    </div>
+                } else {
+                    <p class="text-muted">
+                        Upload the .txt chat log of your Roll20 game to view game stats, or
+                        <button type="button" class="btn btn-link btn-link-primary" @onclick="() => StartAggregator()">
+                            click here
+                        </button>
+                        for a demo
+                    </p>
+                }
+            } else {
+                <p class="text-center text-primary">
+                    <i class="fa-solid fa-dice-d20 loading-icon"></i>
+                    @ParsingSession.Status.GetDescription()
+                    @if (ParsingSession.Status == SessionStatusEnum.UploadingFile || ParsingSession.Status == SessionStatusEnum.ReadingFile) {
+                        <text> (@FileSize KB) -- this may take a few minutes</text>
+                    } else if (ParsingSession.Status == SessionStatusEnum.ParsingRolls) {
+                        <text> (@ParsingSession.ParseResults.ParsedMessageCountDisplay / @ParsingSession.ParseResults.TotalMessageCountDisplay)</text>
+                    }
+                    <i class="fa-solid fa-dice-d20 loading-icon ms-1"></i>
+                </p>
+            }
+        </div>
+    </div>
+
+    <div class="text-center @(ParsingSession.IsLoading ? "invisible" : "visible")">
+        <a href="/about" class="link-primary">About / How do I get the chat log for my game?</a>
+        <br />
+        <small class="text-muted">Developed by Krystof Senfeld</small>
+        <br />
+        <small class="text-muted"><a href="https://roll20.net">Roll20</a> &copy; Roll20, LLC</small>
+    </div>
+</div>

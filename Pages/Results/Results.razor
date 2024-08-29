@@ -1,0 +1,156 @@
+﻿<div class="row h-100">
+    <!-- FILTER PANE -->
+    <div class="col-2 p-2 bg-light h-100">
+        <form class="h-100">
+            <div class="h-100 d-flex flex-column">
+                <div class="mb-3">
+                    <a href="/" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-fw fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+
+                @if (CurrentTab == ResultsTabEnum.Stats) {
+                    <h5>Select Die</h5>
+                    <div class="mb-3">
+                        <select class="form-select" @bind="CurrentDieType">
+                            @foreach (var dieType in ParsingSession.ParseResults.UsedDieTypes) {
+                                <option value="@dieType">@dieType.GetDescription()</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div class="d-flex">
+                    <div class="me-2"><h5>Select Characters</h5></div>
+                    <div class="me-2"><h5><i class="fa-regular fa-circle-question" data-bs-toggle="tooltip" title="@CharactersTooltip"></i></h5></div>
+                    @if (HasOverlap) {
+                        <div>
+                            <h5 class="text-danger"><i class="fa-solid fa-triangle-exclamation" data-bs-toggle="tooltip" title="@OverlapWarning"></i></h5>
+                        </div>
+                    }
+                </div>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary mb-2"
+                        data-bs-toggle="modal" data-bs-target="#groupModal"
+                        @onclick="OnOpenGroupDialogClick">
+
+                    <i class="fa-solid fa-fw fa-plus"></i> Add Group
+                </button>
+
+                <div class="d-flex w-100 mb-2 gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"
+                            @onclick="OnSelectAllClick">
+
+                        Select All
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"
+                            @onclick="OnSelectNoneClick">
+
+                        Select None
+                    </button>
+                </div>
+
+                <div class="list-group list-group-flush flex-grow-1 overflow-auto">
+                    @foreach (var name in AllNames) {
+                        <button type="button" disabled="@(!AllowSelection)"
+                                class="list-group-item list-group-item-@GetColorClass(name) list-group-item-action px-2"
+                                @onclick="() => ToggleNameSelected(name)">
+
+                            <div class="d-flex w-100">
+                                <div class="flex-grow-1 d-flex align-items-center">
+                                    @if (IsGroup(name)) {
+                                        <div data-bs-toggle="tooltip" title="@(string.Join(", ", GroupsByName[name]))">
+                                            <i class="fa-solid fa-user-group fa-fw"></i>
+                                        </div>
+                                    } else {
+                                        <div><i class="fa-solid fa-user fa-fw"></i></div>
+                                    }
+
+                                    <div class="flex-grow-1 px-1 text-truncate">@name</div>
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    @if (IsGroup(name)) {
+                                        <div class="delete-group-button text-danger px-1 mx-1" @onclick="async() => await DeleteGroup(name)">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </div>
+                                    }
+
+                                    @if (CurrentTab == ResultsTabEnum.Stats) {
+                                        <div><span class="badge bg-secondary rounded-pill">@GetDiceCount(name)</span></div>
+                                    }
+                                </div>
+                            </div>
+                        </button>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <AddGroupDialog @ref="addGroupDialog" Parent="this"/>
+
+    <!-- RESULTS PANE -->
+    <div class="col p-2 h-100">
+        <div class="h-100 d-flex flex-column">
+            <!-- TAB BAR -->
+            <div class="d-flex w-100 align-items-center">
+                <div class="flex-grow-1">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview-tab-pane"
+                                    type="button" role="tab" aria-controls="overview-tab-pane" aria-selected="true"
+                                    @onclick="() => ChangeTab(ResultsTabEnum.Overview)">
+                            
+                                Overview
+                            </button>
+                        </li>
+
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-tab-pane"
+                                    type="button" role="tab" aria-controls="stats-tab-pane" aria-selected="false"
+                                    @onclick="() => ChangeTab(ResultsTabEnum.Stats)">
+                            
+                                Stats
+                            </button>
+                        </li>
+
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="log-tab" data-bs-toggle="tab" data-bs-target="#log-tab-pane"
+                                    type="button" role="tab" aria-controls="log-tab-pane" aria-selected="false"
+                                    @onclick="() => ChangeTab(ResultsTabEnum.Log)">
+                            
+                                Log
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                @if (CurrentTab != ResultsTabEnum.Stats) {
+                    <div class="form-check">
+                        <input type="checkbox" id="results-filter-by-selected-names" class="form-check-input" @bind="@FilterBySelectedNames" />
+                        <label class="form-check-label" for="results-filter-by-selected-names">
+                            Filter by selected characters
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <!-- TAB PANE -->
+            <div class="tab-content w-100 flex-grow-1 overflow-auto">
+                <div class="tab-pane fade show active pt-2" id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab" tabindex="0">
+                    <ResultsOverviewTab @ref="resultsOverviewTab" Results="this" />
+                </div>
+
+                <div class="tab-pane fade h-100" id="stats-tab-pane" role="tabpanel" aria-labelledby="stats-tab" tabindex="0">
+                    <ResultsStatsTab @ref="resultsStatsTab" Results="this" />
+                </div>
+
+                <div class="tab-pane fade p-2" id="log-tab-pane" role="tabpanel" aria-labelledby="log-tab" tabindex="0">
+                    <ResultsLogTab @ref="resultsLogTab" Results="this" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

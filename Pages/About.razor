@@ -1,0 +1,362 @@
+﻿<div class="row h-100">
+    <!-- TAB MENU -->
+    <div class="col-2 p-2">
+        <div class="mb-2">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-fw fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+
+        <div class="list-group" id="list-tab" role="tablist">
+            <a class="list-group-item list-group-item-action active" id="list-help-list"
+               data-bs-toggle="list" href="#list-help" role="tab" aria-controls="list-help">
+               
+               Help
+            </a>
+
+            <a class="list-group-item list-group-item-action" id="list-about-list"
+               data-bs-toggle="list" href="#list-about" role="tab" aria-controls="list-about">
+                
+                About
+            </a>
+
+            <a class="list-group-item list-group-item-action" id="list-parsing-list"
+               data-bs-toggle="list" href="#list-parsing" role="tab" aria-controls="list-parsing">
+                
+                How parsing works
+            </a>
+
+            <a class="list-group-item list-group-item-action" id="list-results-list"
+               data-bs-toggle="list" href="#list-results" role="tab" aria-controls="list-results">
+                
+                How results are analyzed
+            </a>
+
+            <a class="list-group-item list-group-item-action" id="list-limitations-list"
+               data-bs-toggle="list" href="#list-limitations" role="tab" aria-controls="list-limitations">
+
+                Limitations
+            </a>
+        </div>
+    </div>
+
+    <!-- TAB PANE -->
+    <div class="col-10 h-100 pb-3 overflow-auto">
+        <div class="tab-content h-100 p-2" id="nav-tabContent" style="max-width: 800px">
+            <!-- HELP -->
+            <div class="tab-pane fade show active" id="list-help" role="tabpanel" aria-labelledby="list-help-list">
+                <h3>Help</h3>
+
+                <h5>How do I get the chat log for my game?</h5>
+
+                <ol>
+                    <li>Open the Chat Archive of your Roll20 game. This can be found on the game page in the Content dropdown menu.</li>
+                    <li>Click "Show on One Page".</li>
+                    <li>Open your browser's developer tools. This can usually be done with F12 or Ctrl+Shift+I on Windows or Command+Option+I on Mac; or the browser menu.</li>
+
+                    <li>
+                        In the developer tools, navigate to the Elements or Inspecor tab (browser-dependent), where you should see something like the following:
+                        <pre class="text-muted"><code>&lt;html&gt;
+    &lt;head&gt;...&lt;/head&gt;
+    &lt;body class="css" style="height: 100%;"&gt;
+    &lt;h1 class="pull-left" style="margin: 0px 0px 6px 6p;"&gt;Chat Archive&lt;/h1&gt;
+    &lt;a href="..." style="display:inline-block;padding:10px;"&gt;Return to Details Page&lt;/a&gt;
+    &lt;div class="clear"&gt;&lt;/div&gt;
+    &lt;div style="margin:10px";&gt;...&lt;/div&gt;
+    &lt;div&gt;...&lt;/div&gt;
+    &lt;div class="clear"&gt;&lt;/div&gt;
+    &lt;div class="textchatcontainer" id="textchat"&gt;...&lt;/div&gt;
+    ...</code></pre>
+                    </li>
+
+                    <li>
+                        Right click on the following line and select Copy. In different browsers, this may appear as Copy element or Copy inner HTML.
+                        <pre class="text-muted"><code>&lt;div class="textchatcontainer" id="textchat"&gt;...&lt;/div&gt;</code></pre>
+                    </li>
+
+                    <li>
+                        Paste the contents into the text processor of your choice (eg Notepad) and save as a .txt file.
+                    </li>
+
+                    <li>
+                        Upload this file to the Roll20Aggregator. Enjoy!
+                    </li>
+                </ol>
+
+                <div class="alert alert-warning" role="alert">
+                    Do not attempt to save the chat log as a .html file directly from the browser via the Save command. 
+                    This encodes the HTML in a way that cannot be parsed by the aggregator.
+                </div>
+
+                <div class="alert alert-info" role="alert">
+                    If you're unable to parse your chat log, please send an email to <a href="mailto: @Strings.SupportEmail" class="alert-link">@Strings.SupportEmail</a>. 
+                    Please attach your chat log file for testing.
+                </div>
+            </div>
+
+            <!-- ABOUT -->
+            <div class="tab-pane fade" id="list-about" role="tabpanel" aria-labelledby="list-about-list">
+                <h3>About</h3>
+
+                <p>
+                    Roll20 Aggregator is a web app that parses the chat log of a Roll20 game to display aggregate statistics and answers questions like,
+                    who wrote the most messages? Who rolled the most most 1s? Who was the luckiest? Were the virtual dice fair?
+                </p>
+
+                <p>
+                    More fully, the following features are available upon uploading a chat log:
+
+                    <ul>
+                        <li>Pie chart and tabular representations of message and dice data</li>
+                        <li>Ranking of highest to lowest rollers, expressed as Z score across all dice</li>
+                        <li>Breakdown of roll results for individual die types in raw count or percent format, sortable by character or result column</li>
+                        <li>Chi square analysis to determine fairness of dice</li>
+                        <li>Creation of character groups to be considered jointly as single characters</li>
+                        <li>Roll log - useful to validate the parser with the chat log</li>
+                        <li>Filter displayed data by selected characters/groups</li>
+                    </ul>
+                </p>
+
+                <p>
+                    Roll20 Aggregator was built using the following technologies:
+
+                    <ul>
+                        <li><a href="https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-8/overview">.NET 8</a></li>
+                        <li><a href="https://dotnet.microsoft.com/en-us/apps/aspnet/web-apps/blazor">Blazor</a></li>
+                        <li><a href="https://getbootstrap.com/docs/5.3/getting-started/introduction/">Bootstrap 5.3.0</a></li>
+                        <li><a href="https://fontawesome.com/start">Font Awesome 6.6.0</a></li>
+                        <li><a href="https://anglesharp.github.io/general/introduction">AngleSharp 1.1.2</a>: used to parse HTML</li>
+                        <li><a href="https://blazor.radzen.com/?theme=material3">Radzen.Blazor 5.1.3</a>: used to display pie charts</li>
+                        <li><a href="http://accord-framework.net/docs/html/N_Accord_Statistics.htm">Accord.Statistics 3.8.0</a>: used for chi square test and pooled standard deviation calculations</li>
+                    </ul>
+                </p>
+
+                <p>
+                    This site does not store any user data.
+                </p>
+
+                <p>
+                    This site is not affiliated with Roll20.
+                </p>
+            </div>
+
+            <!-- HOW PARSING WORKS -->
+            <div class="tab-pane fade" id="list-parsing" role="tabpanel" aria-labelledby="list-parsing-list">
+                <h3>How Parsing Works</h3>
+
+                <h5>Parsing Rolls</h5>
+                <p>
+                    The parser works by checking the HTML of each <code>.message</code> div and parsing it for certain classes and attributes that identify rolls.
+                </p>
+
+                <p>
+                    There are two chief classes of message to look out for: <code>.rollresult</code>, which recodesents a roll block (the more 
+                    pictographic result you get if you were to type <code>/r d20</code>); and <code>.diceroll</code>, which recodesents an inline roll 
+                    (the more compact, textual result you get if you were to type <code>[[d20]]</code>).
+                </p>
+
+                <p>
+                    In a roll block, the relevant roll information can be obtained from the <code>.dicegrouping</code> div. In the below example, 
+                    we can see from the <code>.diceroll</code> div that a d6 was rolled, and from the <code>.didroll</code> div that a 3 was the raw roll. 
+                    Importantly, this the value that was rolled, before any modifiers were applied.
+                </p>
+
+                <p>
+                    <pre class="text-muted"><code>&lt;div data-origindex="0" class="diceroll d6"&gt;
+    &lt;div class="dicon"&gt;
+        &lt;div class="didroll"&gt;3 &lt;/div&gt;
+        &lt;div class="backing"&gt; &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </p>
+
+                <p>
+                    Things are a little more messy for inline rolls. In the below example, we can see that all the roll information is contained in 
+                    the <code>original-title</code> attribute of the <code>.inlinerollresult</code> span. The die type can be parsed from the 
+                    <code>1d100</code> string, and the raw result can be found within the <code>.basicdiceroll</code> span. Note again that in this case 
+                    we are interested in the 49 that was rolled, not the resulting 40 from a -9 being applied.
+                </p>
+
+                <p>
+                    <pre class="text-muted"><code>&lt;span class="inlinerollresult showtip tipsy-n-right"
+        original-title="Rolling 1d100 - 9 = (&lt;span class=&quot;basicdiceroll&quot;&gt;49&lt;/span&gt;)-9"&gt;
+    40
+&lt;/span&gt;</code></pre>
+                </p>
+
+                <p>
+                    Note that messages may contain multiple rolls, and the two types of rolls may rarely be combined: a roll block containing an 
+                    inline roll.
+                </p>
+
+                <p>
+                    Using the above methods, we can associate a die roll with the author of the message, which can typically be found in the 
+                    <code>.by</code> span. This span will not be present in consecutive messages by the same user, so if not present, the message 
+                    is associated with the previous author that was identified.
+                </p>
+
+                <h5>Emote Messages</h5>
+                <p>
+                    Further complications to identifying authorship arise through emote message - that is, messages of the following format:
+                </p>
+
+                <p class="text-muted fst-italic">
+                    August the Second shoots a fireball, dealing [[1d20]] damage.
+                </p>
+
+                <p>
+                    These messages do not have any HTML information to uniquely identify the author, so we must use the text content itself, 
+                    which begins with the character name. However, while as a human we can read the above and understand that the character is 
+                    named August the Second, the parser has no immediate way to know which words should be included in the character name.
+                </p>
+
+                <p>
+                    The parser attempts to get around this using the following strategy:
+
+                    <ol>
+                        <li>
+                            Save parsing of emote messages until after all other messages have been parsed.
+                        </li>
+
+                        <li>
+                            When parsing regular messages in which character names can be identified, map avatar URLs (found in <code>.avatar</code> div) 
+                            to character names. Note that to our advantage, users will by default likely have different avatars.
+                        </li>
+
+                        <li>
+                            After the first round of parsing has been completed, parse emote messages separately and use avatar data to aid in 
+                            identifying the character.
+                        </li>
+                    </ol>
+
+                    <ul>
+                        <li>
+                            In the ideal case, a character is uniquely identified.
+                        </li>
+
+                        <li>
+                            If multiple characters share an avatar, search the emote message for the longest character name match.
+                        </li>
+
+                        <li>
+                            If no avatar mapping was found, search the emote messages for longest match among all known character names.
+                        </li>
+
+                        <li>
+                            If no match is found, it likely means that the character only ever typed emote messages. This is rare, and the parser 
+                            must fall back to assuming that the first word of the emote message is the character name.
+                        </li>
+                    </ul>
+                </p>
+            </div>
+
+            <!-- RESULTS -->
+            <div class="tab-pane fade" id="list-results" role="tabpanel" aria-labelledby="list-results-list">
+                <h3>How results are analyzed</h3>
+
+                <h5>How overall luck is calculated</h5>
+                <p>
+                    The fundamental concept used across dice analysis is the average result of the die. This is equal to <code>(S + 1) / 2</code>, 
+                    where S is the number of sides. On a six-sided die, or d6, for instance, the average roll would be <code>(6 + 1) / 2 = 3.5</code>. 
+                    A 3.5 can never actually be rolled in a single roll of the d6, of course, but over many rolls, the average roll will approach 
+                    this value if the d6 is truly random.
+                </p>
+
+                <p>
+                    The above formula can be extended to rolling multiple dice. For example, if you roll two six-sided dice, 2d6, the average result 
+                    would be <code>2(3.5) = 7</code>. More generally, the average result for a dice roll can be said to be <code>N(S + 1) / 2</code>, 
+                    where N is the number of dice and S is the number of sides of the die.
+                </p>
+
+                <p>
+                    Using only these concepts, we can sum up all of the dice rolled across a campaign by a hypothetical character named Tim and 
+                    calculate the average result of all these dice to determine whether Tim rolled above or below average.
+                </p>
+
+                <p>
+                    When it comes to comparing the rolls of two different characters, though, we need a way to express <em>how far</em> from the 
+                    average the result is, in a way that doesn't depend on the number of dice rolled or what types of dice they were. Otherwise, 
+                    it wouldn't make sense: a character rolling only d100s will of course have a higher average than a character rolling only d6s.
+                </p>
+
+                <p>
+                    This can be done using the Z score statistic, which does precisely that. It expresses the distance from the mean in terms of 
+                    standard deviation, a normalized measure of how spread apart data is around its mean.
+                </p>
+
+                <p>
+                    Calculating standard deviation for individual dice rolls and combining them into a single pooled standard deviation is beyond 
+                    the scope of this explanation. For more reading on this topic, check out 
+                    <a href="https://www.analyticscheck.net/posts/dice-roll-expectations">this article</a> on dice variance by Analytics Check and 
+                    <a href="https://www.statisticshowto.com/pooled-standard-deviation/">this article</a> on pooled standard deviation by Statistics How To.
+                </p>
+
+                <p>
+                    Since the Z scores are normalized, they can be compared between characters. A character with a higher Z score will have on average 
+                    rolled higher, and a character with a lower Z score will have on average rolled lower.
+                </p>
+
+                <h5>How dice fairness is calculated</h5>
+
+                <p>
+                    Calculating the fairness of a die may require more of a statistics lecture than you might want to read. 
+                    In summary, the goal is to determine the probability that the rolls you have observed have happened given a truly random die. 
+                    For example, if you roll a six-sided die 600 times, you would expect that each face would be rolled roughly 100 times. If instead you roll a 
+                    one 300 times, you might suspect that the die isn't being fair.
+                </p>
+
+                <p>
+                    This idea of comparing observed and expected frequency is precisely what can be calculated with a 
+                    <a href="https://en.wikipedia.org/wiki/Pearson%27s_chi-squared_test#Fairness_of_dice">chi square test</a>. The higher the 
+                    resulting chi square statistic of this test, the lower the chance that you would see your results with a truly random die. 
+                </p>
+
+                <p>
+                    Specifically, the test produces a p value that represents how likely your results are given the dice being random. 
+                    A p value of 0.10, for instance, would mean that there's a 10% chance of rolling the results you got if the dice are fair. 
+                </p>
+
+                <p>
+                    There is no set threshold at which one can objectively say a die is unfair. In statistics, we more or less arbitrarily choose 
+                    what is known as the critical value, a p value beyond which the results are said to be significant. One commonly used critical 
+                    value is 0.05, and this is what is used by the aggregator.
+                </p>
+
+                <p>
+                    That is to say, if the calculated p value of your rolls is 0.05 or lower, we reject the assumption that your dice are
+                    truly random. If the p value is greater than 0.05, we cannot however conclude that the dice <em>are</em> random. We 
+                    can make no conclusions - we have simply not found a significant effect.
+                </p>
+
+                <p>
+                    For more reading on this topic, check out <a href="https://rpg.stackexchange.com/a/70803">this post</a> by Ilmari Karonen.
+                </p>
+            </div>
+
+            <!-- LIMITATIONS -->
+            <div class="tab-pane fade" id="list-limitations" role="tabpanel" aria-labelledby="list-limitations-list">
+                <h3>Limitations</h3>
+
+                <p>
+                    Although care was taken in allowing the aggregator to parse as many rolls as possible as accurately 
+                    as possible, there are known limitations to the parser and this site as a whole:
+
+                    <ul>
+                        <li>Private messages and description messages are not parsed.</li>
+                        <li>In rolls where multiple dice are rolled but only a certain number are kept, such as rolling with advantage in D&D 5e, 
+                            all rolls are parsed.
+                        </li>
+                        <li>Special rolls such as FATE dice or compounding dice may not be parsed correctly.</li>
+                        <li>Individual die statistics can only be analyzed for standard die types: d2, d4, d6, d8, d10, d12, d20, d100.</li>
+                        <li>In tabletop games, dice results may be good or bad in different contexts. Sometimes higher is better, sometimes higher 
+                            is worse. The "Highest Roller" ranking may therefore not represent actual "luck"; it only pertains to raw values and 
+                            makes no presumptions about whether the outcome is good or bad.</li>
+                        <li>The site is intended for use on large, horizontal screens. It will not display correctly on mobile devices.</li>
+                    </ul>
+
+                    Because of the complexity of parsing, the aggregator cannot guarantee 100% coverage and accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

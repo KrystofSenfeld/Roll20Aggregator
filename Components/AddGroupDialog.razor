@@ -1,0 +1,53 @@
+﻿<div class="modal fade" id="groupModal" tabindex="-1" aria-labelledby="groupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="groupModalLabel">Add Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form class="h-100 d-flex flex-column">
+                    <div class="form-text mb-3">
+                        Select characters to add to the group. Characters in this group will be considered together as one character. 
+                        For instance, if a character has changed name during the campaign, this can be used to merge them into a single character.
+                    </div>
+
+                    <div class="row mb-3">
+                        <label for="group-name" class="col-sm-3 col-form-label">Group Name</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="group-name" placeholder="Group Name" @bind-value="GroupName">
+                        </div>
+
+                        @if (AttemptedDuplicateName) {
+                            <div class="form-text text-danger">
+                                This name is already used. Please choose a unique name.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="list-group list-group-flush overflow-auto flex-grow-1 mb-3" style="max-height: 50vh">
+                        @foreach (var character in ParsingSession.ParseResults.ValidCharacterNames) {
+                            <button type="button" class="list-group-item list-group-item-@GetColorClass(character) list-group-item-action"
+                                    @onclick="() => ToggleCharacterSelected(character)">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        @character
+                                    </div>
+
+                                    <div><i class="fa-solid fa-fw fa-@GetIcon(character)"></i></div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+
+                    <div class="d-flex w-100 justify-content-center">
+                        <button type="button" class="btn btn-primary text-center" @onclick="CreateGroup" disabled="@(!CanSubmit)">
+                            Create Group
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

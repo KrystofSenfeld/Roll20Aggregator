@@ -1,0 +1,130 @@
+﻿@if (Results.CurrentTab == ResultsTabEnum.Stats) {  
+    <div class="d-flex flex-column h-100">
+        <div class="d-flex flex-row justify-content-between align-items-center py-3 px-2">
+            <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" checked
+                        @onclick="() => SwitchRollDisplayType(RollDisplayType.Count)">
+
+                <label class="btn btn-outline-primary" for="btnradio1">Number</label>
+
+                <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off"
+                        @onclick="() => SwitchRollDisplayType(RollDisplayType.Percent)">
+
+                <label class="btn btn-outline-primary" for="btnradio2">Percent</label>
+            </div>
+
+            <div>
+                @if (TestResults != null) {
+                    <div class="alert alert-@TestResultColorClass h-100 align-items-center" role="alert">
+                        @(TestConclusion)
+                        @if (TestResults.SampleSize > TestResults.MinimumRollsRequired) {
+                            <text>
+                                &chi;&sup2 (@TestResults.DegreesOfFreedom, <em>N</em> =
+                                @TestResults.SampleSize) = @TestResults.ChiSquareStatistic,
+                                <em>p = @TestResults.PValue</em>.
+                            </text>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="py-3 px-2 flex-grow-1 overflow-auto">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <SortableColumnHeader Parent="this"
+                                                ColumnName="Character"
+                                                PropName="@(nameof(DieStatsRowViewModel.Name))"
+                                                PropertyGetter="r => r.Name" />
+
+                        <SortableColumnHeader Parent="this"
+                                                ColumnName="Total Dice"
+                                                PropName="@(nameof(DieStatsRowViewModel.DiceCount))"
+                                                PropertyGetter="r => r.DiceCount" />
+
+                        <SortableColumnHeader Parent="this"
+                                                ColumnName="Average Roll"
+                                                PropName="@(nameof(DieStatsRowViewModel.AverageResult))"
+                                                PropertyGetter="r => r.AverageResult" />
+
+                        <th scope="col" colspan="@ResultGroups.Count" class="tableSwitchHeader">
+                            @(DisplayType == RollDisplayType.Count ? "Rolls" : "Rolls (in %)")
+                        </th>
+                    </tr>
+
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        @foreach (var resultGroup in ResultGroups) {
+                            @if (DisplayType == RollDisplayType.Count) {
+                                <SortableColumnHeader Parent="this"
+                                                        ColumnName="@resultGroup"
+                                                        PropName="@resultGroup"
+                                                        PropertyGetter="r => r.ResultCountByGroup[resultGroup]" />
+                            } else {
+                                <SortableColumnHeader Parent="this"
+                                                        ColumnName="@resultGroup"
+                                                        PropName="@resultGroup"
+                                                        PropertyGetter="r => r.ResultPercentByGroup[resultGroup]" />
+                            }
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr class="table-light">
+                        <td>Total (Global)</td>
+                        <td>@GlobalStats.DiceCount</td>
+                        <td>@GlobalStats.AverageResult</td>
+
+                        @foreach (var key in ResultGroups) {
+                            <td>
+                                @if (DisplayType == RollDisplayType.Count) {
+                                    @GlobalStats.ResultCountByGroup[key]
+                                } else if (DisplayType == RollDisplayType.Percent) {
+                                    @GlobalStats.ResultPercentByGroup[key]
+                                }
+                            </td>
+                        }
+                    </tr>
+
+                    <tr class="table-light">
+                        <td>Total (Selected)</td>
+                        <td>@SelectionStats.DiceCount</td>
+                        <td>@SelectionStats.AverageResult</td>
+
+                        @foreach (var key in ResultGroups) {
+                            <td>
+                                @if (DisplayType == RollDisplayType.Count) {
+                                    @SelectionStats.ResultCountByGroup[key]
+                                } else if (DisplayType == RollDisplayType.Percent) {
+                                    @SelectionStats.ResultPercentByGroup[key]
+                                }
+                            </td>
+                        }
+                    </tr>
+
+                    @foreach (var kvp in SelectedDieStatsByName) {
+                        <tr>
+                            <td>@kvp.Key</td>
+                            <td>@kvp.Value.DiceCount</td>
+                            <td>@kvp.Value.AverageResult</td>
+
+                            @if (DisplayType == RollDisplayType.Count) {
+                                @foreach (var kvp2 in kvp.Value.ResultCountByGroup) {
+                                    <td>@kvp2.Value</td>
+                                }
+                            } else if (DisplayType == RollDisplayType.Percent) {
+                                @foreach (var kvp2 in kvp.Value.ResultPercentByGroup) {
+                                    <td>@kvp2.Value</td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,0 +1,285 @@
+﻿@if (Results.CurrentTab == ResultsTabEnum.Overview) {
+    <div class="row row-cols-sm-2 g-2 me-0">
+        <div class="col">
+            <div class="card" style="height: 45vh">
+                <div class="card-header p-2">
+                    <div class="d-flex w-100 align-items-center">
+                        <div class="flex-grow-1 text-center">
+                            <h5 class="card-title mb-1">@MessageCount</h5>
+                            <h6 class="card-subtitle mb-0 text-body-secondary">Messages</h6>
+                        </div>
+
+                        <div>
+                            <ul class="nav nav-pills" id="messages-tab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="messages-chart-tab"
+                                            data-bs-toggle="pill" data-bs-target="#messages-chart"
+                                            type="button" role="tab" aria-controls="messages-chart" aria-selected="true">
+
+                                        <i class="fa-solid fa-chart-pie"></i>
+                                    </button>
+                                </li>
+
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="messages-table-tab"
+                                            data-bs-toggle="pill" data-bs-target="#messages-table"
+                                            type="button" role="tab" aria-controls="messages-table"
+                                            aria-selected="false">
+
+                                        <i class="fa-solid fa-list"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body overflow-auto">
+                    <div class="tab-content" id="messages-tabContent">
+                        <div class="tab-pane fade show active" id="messages-chart"
+                                role="tabpanel" aria-labelledby="messages-chart-tab" tabindex="0">
+
+                            <RadzenChart>
+                                <RadzenPieSeries Data="@MessageChartData"
+                                                    CategoryProperty="Category"
+                                                    ValueProperty="Value">
+
+                                    <TooltipTemplate Context="data">
+                                        <div>
+                                            @data.Category: <strong>@data.Value.ToString("n0")</strong>
+                                        </div>
+                                    </TooltipTemplate>
+                                </RadzenPieSeries>
+                            </RadzenChart>
+                        </div>
+
+                        <div class="tab-pane fade" id="messages-table" role="tabpanel" aria-labelledby="messages-table-tab" tabindex="0">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var item in MessageTableData) {
+                                        <tr>
+                                            <td class="fw-bold" style="color: @item.NumberColor">@item.Number</td>
+                                            <td>@item.Category</td>
+                                            <td>@item.ValueDisplay</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card" style="height: 45vh">
+                <div class="card-header text-center p-2">
+                    <h5 class="card-title mb-1">Highest Rollers</h5>
+                    <h6 class="card-subtitle mb-0 unselectable">across all dice</h6>
+                </div>
+
+                <div class="card-body text-center overflow-auto">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th class="dotted-underline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="@ZScoreTooltip">
+                                    Z score <i class="fa-regular fa-circle-question"></i>
+                                </th>
+                                <th>Sample size</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var item in RollerData) {
+                                <tr>
+                                    <td class="fw-bold" style="color: @item.NumberColor">@item.Number</td>
+                                    <td>@item.Category</td>
+
+                                    <td class="@(double.IsNaN(item.Value) ? "text-danger dotted-underline" : "")"
+                                        data-bs-toggle="tooltip" title="@(double.IsNaN(item.Value) ? item.NotANumberWarning : "")">
+
+                                        @item.Value.ToString("n4")
+                                    </td>
+
+                                    <td class="@(item.HasLowSampleSize ? "text-danger dotted-underline" : "")"
+                                        data-bs-toggle="tooltip" title="@(item.HasLowSampleSize ? item.LowSampleSizeWarning : "")">
+
+                                        @item.SampleSizeDisplay
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card" style="height: 45vh">
+                <div class="card-header p-2">
+                    <div class="d-flex w-100 align-items-center">
+                        <div class="flex-grow-1 text-center">
+                            <h5 class="card-title mb-1">@DiceCount</h5>
+                            <h6 class="card-subtitle mb-0 text-body-secondary">Dice (by character)</h6>
+                        </div>
+
+                        <div>
+                            <ul class="nav nav-pills" id="rolls-tab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="rolls-chart-tab"
+                                            data-bs-toggle="pill" data-bs-target="#rolls-chart"
+                                            type="button" role="tab" aria-controls="rolls-chart" aria-selected="true">
+
+                                        <i class="fa-solid fa-chart-pie"></i>
+                                    </button>
+                                </li>
+
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="rolls-table-tab"
+                                            data-bs-toggle="pill" data-bs-target="#rolls-table"
+                                            type="button" role="tab" aria-controls="rolls-table"
+                                            aria-selected="false">
+
+                                        <i class="fa-solid fa-list"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body overflow-auto">
+                    <div class="tab-content" id="rolls-tabContent">
+                        <div class="tab-pane fade show active" id="rolls-chart"
+                                role="tabpanel" aria-labelledby="rolls-chart-tab" tabindex="0">
+
+                            <RadzenChart>
+                                <RadzenPieSeries Data="@DiceByNameChartData"
+                                                    CategoryProperty="Category"
+                                                    ValueProperty="Value">
+
+                                    <TooltipTemplate Context="data">
+                                        <div>
+                                            @data.Category: <strong>@data.Value.ToString("n0")</strong>
+                                        </div>
+                                    </TooltipTemplate>
+                                </RadzenPieSeries>
+                            </RadzenChart>
+                        </div>
+
+                        <div class="tab-pane fade" id="rolls-table" role="tabpanel" aria-labelledby="rolls-table-tab" tabindex="0">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var item in DiceByNameTableData) {
+                                        <tr>
+                                            <td class="fw-bold" style="color: @item.NumberColor">@item.Number</td>
+                                            <td>@item.Category</td>
+                                            <td>@item.ValueDisplay</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card" style="height: 45vh">
+                <div class="card-header p-2">
+                    <div class="d-flex w-100 align-items-center">
+                        <div class="flex-grow-1 text-center">
+                            <h5 class="card-title mb-1">@DiceCount</h5>
+                            <h6 class="card-subtitle mb-0 text-body-secondary">Dice (by type)</h6>
+                        </div>
+
+                        <div>
+                            <ul class="nav nav-pills" id="dice-tab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="dice-chart-tab"
+                                            data-bs-toggle="pill" data-bs-target="#dice-chart"
+                                            type="button" role="tab" aria-controls="dice-chart" aria-selected="true">
+
+                                        <i class="fa-solid fa-chart-pie"></i>
+                                    </button>
+                                </li>
+
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="dice-table-tab"
+                                            data-bs-toggle="pill" data-bs-target="#dice-table"
+                                            type="button" role="tab" aria-controls="dice-table"
+                                            aria-selected="false">
+
+                                        <i class="fa-solid fa-list"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body overflow-auto">
+                    <div class="tab-content" id="dice-tabContent">
+                        <div class="tab-pane fade show active" id="dice-chart"
+                                role="tabpanel" aria-labelledby="dice-chart-tab" tabindex="0">
+
+                            <RadzenChart>
+                                <RadzenPieSeries Data="@DiceByTypeChartData"
+                                                    CategoryProperty="Category"
+                                                    ValueProperty="Value">
+
+                                    <TooltipTemplate Context="data">
+                                        <div>
+                                            @data.Category: <strong>@data.Value.ToString("n0")</strong>
+                                        </div>
+                                    </TooltipTemplate>
+                                </RadzenPieSeries>
+                            </RadzenChart>
+                        </div>
+
+                        <div class="tab-pane fade" id="dice-table" role="tabpanel" aria-labelledby="dice-table-tab" tabindex="0">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var item in DiceByTypeTableData) {
+                                        <tr>
+                                            <td class="fw-bold" style="color: @item.NumberColor">@item.Number</td>
+                                            <td>@item.Category</td>
+                                            <td>@item.ValueDisplay</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
