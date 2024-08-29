@@ -4,7 +4,7 @@
             <span class="text-primary"><i class="fa-solid fa-dice-d20"></i></span><span class=fw-bold>Roll</span><span class="fw-lighter">20</span> Aggregator
         </h1>
         
-        <InputFile OnChange="UploadFileAndParse" class="form-control form-control-lg" disabled="@(ParsingSession.IsLoading || HasError)"/>
+        <InputFile OnChange="UploadFileAndParse" tabindex="0" class="form-control form-control-lg" disabled="@(ParsingSession.IsLoading || HasError)"/>
 
         <div class="w-100 mt-2 text-center">
             @if (!ParsingSession.IsLoading) {

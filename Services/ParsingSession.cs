@@ -3,11 +3,19 @@ using AngleSharp;
 using Microsoft.AspNetCore.Components.Forms;
 using Roll20AggregatorHosted.Models;
 using Roll20AggregatorHosted.Models.Enums;
+using Microsoft.AspNetCore.Components;
 
 namespace Roll20AggregatorHosted.Services {
     public class ParsingSession {
         private const long MAX_FILE_SIZE = 1024L * 1024 * 1024 * 2; // 2 GB
+        private readonly HttpClient httpClient;
+        private readonly NavigationManager navigation;
         private SessionStatusEnum sessionStatus = SessionStatusEnum.NotStarted;
+
+        public ParsingSession(HttpClient httpClient, NavigationManager navigation) {
+            this.httpClient = httpClient;
+            this.navigation = navigation;
+        }
 
         public event EventHandler<EventArgs> SessionStatusChanged;
         public SessionStatusEnum Status {
@@ -33,16 +41,16 @@ namespace Roll20AggregatorHosted.Services {
                 IDocument htmlDocument;
 
                 if (file == null) {
-                    
+
                     Status = SessionStatusEnum.ReadingFile;
-                    using StreamReader reader = new("sample.txt");
-                    string html = await reader.ReadToEndAsync();
-                    htmlDocument = await context.OpenAsync(req => req.Content(html));
+
+                    string content = await httpClient.GetStringAsync($"{navigation.BaseUri}/sample.txt");
+                    htmlDocument = await context.OpenAsync(req => req.Content(content));
                 } else {
                     Status = SessionStatusEnum.ReadingFile;
                     string path = Path.GetTempFileName();
                     await using FileStream stream = new(path, FileMode.Create);
-                    
+
                     await file.OpenReadStream(MAX_FILE_SIZE).CopyToAsync(stream);
                     stream.Position = 0;
 
@@ -53,10 +61,10 @@ namespace Roll20AggregatorHosted.Services {
 
                 var parser = new FileParser(htmlDocument, this);
                 await parser.Parse();
-            } catch {
+            /*} catch {
                 CancelSession();
-                return false;
-            }
+                return false;*/
+            } finally { }
 
             if (ParseResults == null || !ParseResults.RawCharacterStats.Any()) {
                 CancelSession();

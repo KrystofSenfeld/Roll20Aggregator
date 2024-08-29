@@ -9,6 +9,7 @@ namespace Roll20AggregatorHosted {
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
+            builder.Services.AddHttpClient();
             builder.Services.AddScoped<ParsingSession>();
 
             var app = builder.Build();
