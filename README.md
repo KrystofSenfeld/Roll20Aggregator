@@ -1,4 +1,6 @@
 # Roll20Aggregator
+https://roll20aggregator.azurewebsites.net/
+
 Roll20 Aggregator is a web app that parses the chat log of a Roll20 game to display aggregate statistics and answers questions like, who wrote the most messages? Who rolled the most most 1s? Who was the luckiest? Were the virtual dice fair?
 
 ![Screenshot](screenshot.png)
