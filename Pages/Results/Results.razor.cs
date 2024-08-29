@@ -8,6 +8,7 @@ namespace Roll20AggregatorHosted.Pages.Results {
     [Route("/results")]
     public partial class Results : ComponentBase {
         [Inject] ParsingSession ParsingSession { get; set; }
+        [Inject] NavigationManager NavigationManager { get; set; }
         [Inject] IJSRuntime JSRuntime { get; set; }
 
         private DieTypeEnum currentDieType;
@@ -15,6 +16,14 @@ namespace Roll20AggregatorHosted.Pages.Results {
         private ResultsOverviewTab resultsOverviewTab;
         private ResultsStatsTab resultsStatsTab;
         private ResultsLogTab resultsLogTab;
+
+        protected override async Task OnInitializedAsync() {
+            if (ParsingSession.Status == SessionStatusEnum.NotStarted) {
+                NavigationManager.NavigateTo(NavigationManager.BaseUri);
+            }
+
+            await base.OnInitializedAsync();
+        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender) {
             await JSRuntime.InvokeVoidAsync("initializeTooltips");
